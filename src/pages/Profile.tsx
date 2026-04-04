@@ -1,65 +1,108 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { 
+  collection, 
+  query, 
+  where, 
+  onSnapshot, // <--- Add this one
+  deleteDoc, 
+  doc, 
+  getDocs, 
+  documentId 
+} from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Ad } from '../types';
 import AdCard from '../components/AdCard';
 import { useLanguage } from '../contexts/LanguageContext';
-import { User as UserIcon, Settings, Heart, List, Trash2, Edit, CheckCircle, Clock } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { User } from '../types';
+import { Settings, Heart, List, Trash2, CheckCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { toast } from 'sonner';
 
-
 export default function Profile() {
   const { user, logout } = useAuth();
+  console.log("FULL USER OBJECT:", user);
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'listings' | 'favorites'>('listings');
   const [myAds, setMyAds] = useState<Ad[]>([]);
+  const [favoriteAds, setFavoriteAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingFavs, setLoadingFavs] = useState(false);
 
-  // DEBUG:
-  console.log("TReW3CIHUOPs54r5a0wF9WMQX6E2:", user?.uid);
-
+  // 1. Fetch User's Own Listings (Real-time)
   useEffect(() => {
-    if (!user) return;
+  // 1. Guard: Only run if the tab is active and we have a user
+  if (activeTab !== 'favorites' || !user) {
+    setFavoriteAds([]);
+    return;
+  }
 
-    const q = query(collection(db, 'ads'), where('sellerUid', '==', user.uid));
+  // 2. Debugging: Check your console (F12) to see if this array is actually populated
+  console.log("Current user favorite IDs:", user.favoriteAds);
+
+  // 3. Guard: Firestore "in" query fails if array is empty or missing
+  if (!user.favoriteAds || user.favoriteAds.length === 0) {
+    setFavoriteAds([]);
+    setLoadingFavs(false);
+    return;
+  }
+
+  setLoadingFavs(true);
+
+  try {
+    // 4. Using the IDs directly from the user object
+    const q = query(
+      collection(db, 'ads'),
+      where(documentId(), 'in', user.favoriteAds)
+    );
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setMyAds(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ad)));
-      setLoading(false);
+      const ads = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      } as Ad));
+      
+      console.log("Found matching ads in DB:", ads.length);
+      setFavoriteAds(ads);
+      setLoadingFavs(false);
+    }, (err) => {
+      console.error("Firestore error:", err);
+      setLoadingFavs(false);
     });
 
     return () => unsubscribe();
-  }, [user]);
+  } catch (error) {
+    console.error("Setup error:", error);
+    setLoadingFavs(false);
+  }
+}, [activeTab, user, user?.favoriteAds]); // Added 'user' to the dependency array
 
   if (!user) return null;
 
   const handleDeleteAd = async (adId: string) => {
-  console.log("Delete button clicked for ID:", adId); // If this doesn't show up, the button isn't firing
-  try {
-    await deleteDoc(doc(db, 'ads', adId));
-    toast.success('Ad deleted successfully');
-  } catch (error: any) {
-    console.error("Full Delete Error:", error);
-    toast.error('Failed to delete: ' + error.message);
-  }
-};
+    if (!window.confirm('Are you sure you want to delete this ad?')) return;
+    try {
+      await deleteDoc(doc(db, 'ads', adId));
+      toast.success('Ad deleted successfully');
+    } catch (error: any) {
+      toast.error('Failed to delete: ' + error.message);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Profile Sidebar */}
+          
+          {/* Sidebar Stats */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 text-center">
               <div className="relative inline-block mb-4">
                 <img
                   src={user.photoURL || 'https://picsum.photos/seed/user/100/100'}
                   alt={user.displayName}
-                  className="w-24 h-24 rounded-full border-4 border-green-100 mx-auto"
+                  className="w-24 h-24 rounded-full border-4 border-green-100 mx-auto object-cover"
                 />
                 {user.isVerified && (
                   <div className="absolute bottom-0 right-0 bg-blue-500 text-white p-1 rounded-full border-2 border-white">
@@ -81,33 +124,17 @@ export default function Profile() {
                 </button>
               </div>
             </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-              <h3 className="font-bold text-gray-900 mb-4">Account Stats</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500 text-sm">Total Ads</span>
-                  <span className="font-bold text-green-700">{myAds.length}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500 text-sm">Active Ads</span>
-                  <span className="font-bold text-green-700">{myAds.filter(a => a.status === 'active').length}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500 text-sm">Total Views</span>
-                  <span className="font-bold text-green-700">{myAds.reduce((acc, ad) => acc + (ad.viewCount || 0), 0)}</span>
-                </div>
-              </div>
-            </div>
           </div>
 
-          {/* Main Content */}
+          {/* Main Content Area */}
           <div className="lg:col-span-3 space-y-6">
+            {/* Tab Switcher */}
             <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-200 flex space-x-2">
               <button
                 onClick={() => setActiveTab('listings')}
                 className={cn(
                   "flex-1 py-3 rounded-xl font-bold flex items-center justify-center space-x-2 transition-all",
+                  "text-sm sm:text-base",
                   activeTab === 'listings' ? "bg-green-700 text-white shadow-md" : "text-gray-500 hover:bg-gray-50"
                 )}
               >
@@ -118,6 +145,7 @@ export default function Profile() {
                 onClick={() => setActiveTab('favorites')}
                 className={cn(
                   "flex-1 py-3 rounded-xl font-bold flex items-center justify-center space-x-2 transition-all",
+                  "text-sm sm:text-base",
                   activeTab === 'favorites' ? "bg-green-700 text-white shadow-md" : "text-gray-500 hover:bg-gray-50"
                 )}
               >
@@ -126,6 +154,7 @@ export default function Profile() {
               </button>
             </div>
 
+            {/* Tab Content */}
             {activeTab === 'listings' ? (
               <div className="space-y-4">
                 {loading ? (
@@ -136,33 +165,14 @@ export default function Profile() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {myAds.map(ad => (
                       <div key={ad.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 flex space-x-4">
-                        <div className="w-32 h-32 rounded-xl overflow-hidden flex-shrink-0">
+                        <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl overflow-hidden flex-shrink-0">
                           <img src={ad.images[0]} alt="" className="w-full h-full object-cover" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start">
-                            <h4 className="font-bold text-gray-900 truncate">{ad.title}</h4>
-                            <div className={cn(
-                              "text-[10px] font-bold px-2 py-1 rounded uppercase",
-                              ad.status === 'active' ? "bg-green-100 text-green-700" :
-                              ad.status === 'pending' ? "bg-orange-100 text-orange-700" : "bg-red-100 text-red-700"
-                            )}>
-                              {ad.status}
-                            </div>
-                          </div>
-                          <p className="text-green-700 font-bold mt-1 text-lg">{ad.price.toLocaleString()} PKR</p>
-                          <div className="flex items-center text-xs text-gray-400 mt-2">
-                            <Clock className="w-3 h-3 mr-1" />
-                            Posted {new Date(ad.createdAt).toLocaleDateString()}
-                          </div>
+                          <h4 className="font-bold text-gray-900 truncate">{ad.title}</h4>
+                          <p className="text-green-700 font-bold mt-1">{ad.price.toLocaleString()} PKR</p>
                           <div className="flex space-x-2 mt-4">
-                            <Link to={`/ad/${ad.id}`} className="flex-1 bg-gray-50 text-gray-600 p-2 rounded-lg hover:bg-gray-100 flex items-center justify-center">
-                              <Edit className="w-4 h-4" />
-                            </Link>
-                            <button
-                              onClick={() => handleDeleteAd(ad.id)}
-                              className="flex-1 bg-red-50 text-red-600 p-2 rounded-lg hover:bg-red-100 flex items-center justify-center"
-                            >
+                            <button onClick={() => handleDeleteAd(ad.id)} className="flex-1 bg-red-50 text-red-600 p-2 rounded-lg hover:bg-red-100 flex items-center justify-center">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
@@ -173,13 +183,33 @@ export default function Profile() {
                 ) : (
                   <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-gray-300">
                     <p className="text-gray-500">You haven't posted any ads yet.</p>
-                    <button onClick={() => navigate('/post-ad')} className="mt-4 text-green-700 font-bold">Post your first ad</button>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-gray-300">
-                <p className="text-gray-500">Your favorite ads will appear here.</p>
+              <div className="space-y-4">
+                {loadingFavs ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {[1, 2].map(i => <div key={i} className="h-48 bg-white rounded-2xl animate-pulse"></div>)}
+                  </div>
+                ) : favoriteAds.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {favoriteAds.map(ad => (
+                      <AdCard 
+                        key={ad.id} 
+                        ad={ad} 
+                        isFavorite={true} 
+                        onToggleFavorite={() => {}} // Not strictly needed here, handled by Home/Cards
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-gray-300">
+                    <Heart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">No favorite ads yet.</p>
+                    <button onClick={() => navigate('/')} className="mt-4 text-green-700 font-bold">Explore Ads</button>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -2,14 +2,13 @@ export type Category = 'Cow' | 'Buffalo' | 'Goat' | 'Sheep' | 'Camel' | 'Others'
 
 export interface User {
   uid: string;
-  displayName: string;
-  email: string;
-  photoURL: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  favoriteAds?: string[]; // This is the crucial one for your heart icons!
+  role?: 'admin' | 'user';
+  isVerified?: boolean;
   phoneNumber?: string;
-  location?: string;
-  isVerified: boolean;
-  role: 'user' | 'admin';
-  createdAt: string;
 }
 
 export interface Ad {

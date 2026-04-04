@@ -1,6 +1,6 @@
 // src/App.tsx
 
-import { AuthProvider } from './contexts/AuthProvider';
+import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';

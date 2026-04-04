@@ -10,13 +10,22 @@ import {
 import { toast } from 'sonner';
 
 export default function Admin() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, isAdmin: isAuthAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [ads, setAds] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'ads' | 'users'>('ads');
 
-  const isAdmin = user?.email === 'hellisop0@gmail.com';
+  // Check for both Firebase Auth admin and Master Login session
+  const isSessionAdmin = sessionStorage.getItem('admin_session_active') === 'true';
+  const isAdmin = isAuthAdmin || isSessionAdmin || user?.email === 'hellisop0@gmail.com';
+
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      navigate('/admin-login');
+      return;
+    }
+  }, [isAdmin, authLoading, navigate]);
 
   useEffect(() => {
     if (!isAdmin) return;
