@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// 1. Updated Admin List (Case Insensitive)
+// 1. Define the list of admin emails (Normalized to lowercase)
 const ADMIN_EMAILS = [
   'saadatali1403@gmail.com',
   'hellisop0@gmail.com',
@@ -23,11 +23,14 @@ export default function Admin() {
   const [users, setUsers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'ads' | 'users'>('ads');
 
-  const userEmail = user?.email?.toLowerCase().trim();
-  const isAdmin = isAuthAdmin || (userEmail && ADMIN_EMAILS.includes(userEmail));
+  // 2. Comprehensive Admin Check
+  const currentUserEmail = user?.email?.toLowerCase().trim();
+  const isAdmin = isAuthAdmin || (currentUserEmail && ADMIN_EMAILS.includes(currentUserEmail));
 
   useEffect(() => {
-    if (!authLoading && !isAdmin) navigate('/admin-login');
+    if (!authLoading && !isAdmin) {
+      navigate('/admin-login');
+    }
   }, [isAdmin, authLoading, navigate]);
 
   useEffect(() => {
@@ -37,81 +40,93 @@ export default function Admin() {
     return () => { unsubAds(); unsubUsers(); };
   }, [isAdmin]);
 
-  // --- RESTORED ACTIONS ---
-  const handleUpdateAdStatus = async (adId: string, status: 'active' | 'declined') => {
-    try {
-      await updateDoc(doc(db, 'ads', adId), { status });
-      toast.success(`Ad marked as ${status}`);
-    } catch { toast.error('Failed to update status'); }
+  // Actions
+  const handleUpdateStatus = async (id: string, s: 'active' | 'declined') => {
+    try { 
+      await updateDoc(doc(db, 'ads', id), { status: s }); 
+      toast.success(`Ad marked as ${s}`); 
+    } catch { 
+      toast.error('Update failed'); 
+    }
   };
 
-  const handleToggleFeatured = async (adId: string, currentStatus: boolean) => {
+  const handleToggleFeatured = async (id: string, currentStatus: boolean) => {
     try {
-      await updateDoc(doc(db, 'ads', adId), { isFeatured: !currentStatus });
-      toast.success(!currentStatus ? 'Ad Featured (Gold)' : 'Featured removed');
-    } catch { toast.error('Feature toggle failed'); }
+      await updateDoc(doc(db, 'ads', id), { isFeatured: !currentStatus });
+      toast.success(!currentStatus ? 'Featured' : 'Unfeatured');
+    } catch {
+      toast.error('Failed to toggle feature');
+    }
   };
 
-  const handleDeleteAd = async (adId: string) => {
-    if (!window.confirm('PERMANENT DELETE? This cannot be undone.')) return;
+  const handleDelete = async (type: 'ads' | 'users', id: string) => {
+    if (!window.confirm('Are you sure? This is permanent.')) return;
     try {
-      await deleteDoc(doc(db, 'ads', adId));
-      toast.success('Ad wiped from database');
-    } catch { toast.error('Delete failed'); }
+      await deleteDoc(doc(db, type, id));
+      toast.success('Deleted successfully');
+    } catch {
+      toast.error('Delete failed');
+    }
   };
 
-  if (authLoading) return <div className="p-10 text-center font-bold text-green-700 uppercase tracking-widest">Accessing CityCare Secure Layer...</div>;
+  if (authLoading) return <div className="p-10 text-center font-bold text-green-700 uppercase">Loading Secure Layer...</div>;
   if (!isAdmin) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-2 sm:p-4 md:p-8 font-sans">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-
-        {/* HEADER SECTION */}
-        <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
-          <div className="text-center md:text-left w-full md:w-auto">
-            <h1 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight uppercase">Admin Panel</h1>
-            <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">Mandi Operations & Verification</p>
+        
+        {/* HEADER */}
+        <div className="flex flex-col space-y-4 mb-6">
+          <div className="text-center md:text-left">
+            <h1 className="text-2xl sm:text-4xl font-black text-gray-900 uppercase">Admin Panel</h1>
+            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Operations Dashboard</p>
           </div>
 
-          <div className="flex bg-white p-1.5 rounded-2xl border shadow-sm w-full md:w-auto overflow-x-auto">
-            <button onClick={() => setActiveTab('ads')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-black text-xs uppercase transition-all ${activeTab === 'ads' ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400'}`}>
+          {/* TAB SWITCHER */}
+          <div className="flex bg-white p-1 rounded-xl border shadow-sm w-full overflow-x-auto scrollbar-hide">
+            <button 
+              onClick={() => setActiveTab('ads')} 
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-black text-[10px] uppercase transition-all whitespace-nowrap ${activeTab === 'ads' ? 'bg-green-600 text-white' : 'text-gray-400'}`}
+            >
               <LayoutDashboard size={14} /> Listings ({ads.length})
             </button>
-            <button onClick={() => setActiveTab('users')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-black text-xs uppercase transition-all ${activeTab === 'users' ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400'}`}>
+            <button 
+              onClick={() => setActiveTab('users')} 
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-black text-[10px] uppercase transition-all whitespace-nowrap ${activeTab === 'users' ? 'bg-green-600 text-white' : 'text-gray-400'}`}
+            >
               <Users size={14} /> Sellers ({users.length})
             </button>
           </div>
         </div>
 
-        {/* MOBILE LIST (Visible on small/medium screens) */}
-        <div className="block lg:hidden space-y-4">
+        {/* MOBILE LIST */}
+        <div className="block lg:hidden space-y-3">
           {activeTab === 'ads' ? ads.map(ad => (
             <div key={ad.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
-              <div className="flex gap-4 items-start mb-4">
-                <div className="w-20 h-16 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 border relative">
-                  {ad.images?.[0] ? <img src={ad.images[0]} className="w-full h-full object-cover" /> : <div className="flex items-center justify-center h-full text-gray-300"><ImageIcon size={16} /></div>}
-                  {ad.isFeatured && <div className="absolute top-0 left-0 w-2 h-2 bg-yellow-400 rounded-br-md"></div>}
-                </div>
+              <div className="flex gap-3 items-start mb-3">
+                <img src={ad.images?.[0]} className="w-16 h-16 rounded-lg object-cover bg-gray-100 flex-shrink-0 border" />
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-gray-900 text-sm truncate">{ad.title}</h3>
                   <p className="text-green-600 font-black text-xs">Rs {Number(ad.price).toLocaleString()}</p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <Hash size={10} className="text-blue-500" />
-                    <span className="text-[9px] font-mono font-black text-blue-600 uppercase truncate">{ad.id}</span>
+                  <div className="flex gap-2 items-center">
+                    <span className={`inline-block mt-1 text-[8px] font-black px-2 py-0.5 rounded border uppercase ${ad.status === 'active' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-red-50 text-red-600 border-red-200'}`}>
+                      {ad.status || 'Pending'}
+                    </span>
+                    {ad.isFeatured && <Star size={10} className="text-yellow-500 fill-yellow-500" />}
                   </div>
                 </div>
               </div>
-
+              
               <div className="flex flex-wrap gap-2 pt-3 border-t justify-between items-center">
-                <div className="flex gap-1.5">
-                  <button onClick={() => handleUpdateAdStatus(ad.id, 'active')} className="p-2.5 bg-green-50 text-green-600 rounded-xl"><CheckCircle2 size={18} /></button>
-                  <button onClick={() => handleUpdateAdStatus(ad.id, 'declined')} className="p-2.5 bg-orange-50 text-orange-600 rounded-xl"><XCircle size={18} /></button>
-                  <button onClick={() => handleToggleFeatured(ad.id, ad.isFeatured)} className={`p-2.5 rounded-xl ${ad.isFeatured ? 'bg-yellow-400 text-white' : 'bg-gray-100 text-gray-400'}`}><Star size={18} fill={ad.isFeatured ? 'white' : 'none'} /></button>
+                <div className="flex gap-1">
+                  <button onClick={() => handleUpdateStatus(ad.id, 'active')} className="p-2 bg-green-50 text-green-600 rounded-lg"><CheckCircle2 size={18} /></button>
+                  <button onClick={() => handleUpdateStatus(ad.id, 'declined')} className="p-2 bg-orange-50 text-orange-600 rounded-lg"><XCircle size={18} /></button>
+                  <button onClick={() => handleToggleFeatured(ad.id, ad.isFeatured)} className={`p-2 rounded-lg ${ad.isFeatured ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-50 text-gray-400'}`}><Star size={18} /></button>
                 </div>
-                <div className="flex gap-1.5">
-                  <Link to={`/ad/${ad.id}`} className="p-2.5 bg-blue-50 text-blue-600 rounded-xl"><ExternalLink size={18} /></Link>
-                  <button onClick={() => handleDeleteAd(ad.id)} className="p-2.5 bg-red-50 text-red-600 rounded-xl"><Trash2 size={18} /></button>
+                <div className="flex gap-1">
+                  <Link to={`/ad/${ad.id}`} className="p-2 bg-blue-50 text-blue-600 rounded-lg"><ExternalLink size={18} /></Link>
+                  <button onClick={() => handleDelete('ads', ad.id)} className="p-2 bg-red-50 text-red-600 rounded-lg"><Trash2 size={18} /></button>
                 </div>
               </div>
             </div>
@@ -119,71 +134,69 @@ export default function Admin() {
              <div key={u.uid} className="bg-white p-4 rounded-xl border flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 uppercase">{u.displayName?.charAt(0)}</div>
-                  <div><div className="text-sm font-bold">{u.displayName || 'Guest'}</div><div className="text-[10px] text-gray-400">{u.email}</div></div>
+                  <div className="text-sm font-bold truncate max-w-[150px]">{u.displayName || 'Guest User'}</div>
                 </div>
-                <button onClick={() => handleDeleteAd(u.uid)} className="text-red-400 p-2"><Trash2 size={18} /></button>
+                <button onClick={() => handleDelete('users', u.uid)} className="text-red-400 p-2"><Trash2 size={18} /></button>
              </div>
           ))}
         </div>
 
-        {/* DESKTOP VIEW (Visible only on Large screens) */}
+        {/* DESKTOP TABLE */}
         <div className="hidden lg:block bg-white rounded-3xl border border-gray-200 shadow-xl overflow-hidden">
           <table className="w-full text-left">
-            <thead className="bg-gray-50/50 border-b border-gray-100">
+            <thead className="bg-gray-50 border-b border-gray-100">
               <tr className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
-                <th className="p-5">{activeTab === 'ads' ? 'Listing Thumbnail & ID' : 'User Profile'}</th>
-                <th className="p-5">{activeTab === 'ads' ? 'Seller & Price' : 'Email Address'}</th>
+                <th className="p-5">{activeTab === 'ads' ? 'Listing' : 'User'}</th>
+                <th className="p-5">{activeTab === 'ads' ? 'Price' : 'Email'}</th>
                 <th className="p-5">Status</th>
-                <th className="p-5 text-right">Quick Actions</th>
+                <th className="p-5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {activeTab === 'ads' ? ads.map(ad => (
-                <tr key={ad.id} className="hover:bg-gray-50/30 transition-colors">
+                <tr key={ad.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="p-5">
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-12 rounded-lg bg-gray-100 overflow-hidden border relative">
-                        {ad.images?.[0] ? <img src={ad.images[0]} className="w-full h-full object-cover" /> : <div className="flex justify-center h-full text-gray-300"><ImageIcon size={16} /></div>}
-                        {ad.isFeatured && <div className="absolute top-0 left-0 w-2 h-2 bg-yellow-400 rounded-br-md"></div>}
-                      </div>
-                      <div>
-                        <div className="font-bold text-gray-900 text-sm leading-tight mb-1">{ad.title}</div>
-                        <div className="flex items-center gap-1"><Hash size={10} className="text-blue-500" /><span className="text-[10px] font-mono font-black text-blue-600 uppercase">{ad.id}</span></div>
+                      <img src={ad.images?.[0]} className="w-12 h-10 rounded object-cover border" />
+                      <div className="flex flex-col">
+                        <span className="font-bold text-sm">{ad.title}</span>
+                        <span className="text-[10px] text-blue-500 font-mono">ID: {ad.id}</span>
                       </div>
                     </div>
                   </td>
+                  <td className="p-5 text-sm font-black text-green-600">Rs {Number(ad.price).toLocaleString()}</td>
                   <td className="p-5">
-                    <div className="text-xs font-bold text-gray-800">{ad.sellerName || 'Anonymous'}</div>
-                    <div className="text-[10px] text-green-600 font-black mt-0.5">Rs {Number(ad.price).toLocaleString()}</div>
-                  </td>
-                  <td className="p-5">
-                    <div className="flex flex-col gap-1.5 items-start">
-                      <span className={`text-[9px] font-black px-2 py-0.5 rounded border uppercase ${ad.status === 'active' ? 'bg-green-50 border-green-200 text-green-600' : 'bg-red-50 border-red-200 text-red-600'}`}>{ad.status || 'Pending'}</span>
-                      {ad.isFeatured && <span className="flex items-center gap-1 bg-yellow-400 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-sm"><Star size={8} fill="currentColor" /> GOLD</span>}
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[9px] font-black px-2 py-0.5 rounded border uppercase ${ad.status === 'active' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                        {ad.status || 'pending'}
+                      </span>
+                      {ad.isFeatured && <Star size={12} className="text-yellow-500 fill-yellow-500" />}
                     </div>
                   </td>
-                  <td className="p-5 text-right flex justify-end gap-1">
-                    <button onClick={() => handleUpdateAdStatus(ad.id, 'active')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg"><CheckCircle2 size={20} /></button>
-                    <button onClick={() => handleUpdateAdStatus(ad.id, 'declined')} className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg"><XCircle size={20} /></button>
-                    <button onClick={() => handleToggleFeatured(ad.id, ad.isFeatured)} className={`p-2 rounded-lg ${ad.isFeatured ? 'bg-yellow-400 text-white shadow-md shadow-yellow-100' : 'bg-gray-100 text-gray-400'}`}><Star size={20} fill={ad.isFeatured ? 'white' : 'none'} /></button>
-                    <Link to={`/ad/${ad.id}`} className="p-2 bg-blue-50 text-blue-600 rounded-lg"><ExternalLink size={20} /></Link>
-                    <button onClick={() => handleDeleteAd(ad.id)} className="p-2 bg-red-50 text-red-600 rounded-lg"><Trash2 size={20} /></button>
+                  <td className="p-5 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => handleUpdateStatus(ad.id, 'active')} className="text-green-600 p-1 hover:bg-green-50 rounded"><CheckCircle2 size={18} /></button>
+                      <button onClick={() => handleUpdateStatus(ad.id, 'declined')} className="text-orange-600 p-1 hover:bg-orange-50 rounded"><XCircle size={18} /></button>
+                      <button onClick={() => handleToggleFeatured(ad.id, ad.isFeatured)} className={`${ad.isFeatured ? 'text-yellow-500' : 'text-gray-300'} p-1 hover:bg-yellow-50 rounded`}><Star size={18} fill={ad.isFeatured ? 'currentColor' : 'none'} /></button>
+                      <Link to={`/ad/${ad.id}`} className="text-blue-600 p-1 hover:bg-blue-50 rounded"><ExternalLink size={18} /></Link>
+                      <button onClick={() => handleDelete('ads', ad.id)} className="text-red-600 p-1 hover:bg-red-50 rounded"><Trash2 size={18} /></button>
+                    </div>
                   </td>
                 </tr>
               )) : users.map(u => (
-                <tr key={u.uid}>
-                  <td className="p-5 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-black text-blue-600 border border-blue-200 overflow-hidden">{u.photoURL ? <img src={u.photoURL} className="w-full h-full object-cover" /> : u.displayName?.charAt(0) || 'U'}</div>
-                    <div><div className="font-bold text-gray-900 text-sm">{u.displayName || 'Guest User'}</div><div className="text-[9px] text-gray-400 font-mono">ID: {u.uid}</div></div>
+                <tr key={u.uid} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="p-5 font-bold text-sm">{u.displayName || 'Guest User'}</td>
+                  <td className="p-5 text-sm text-gray-500">{u.email}</td>
+                  <td className="p-5"><span className="text-[10px] font-black bg-blue-50 text-blue-600 px-2 py-1 rounded-full uppercase">User</span></td>
+                  <td className="p-5 text-right">
+                    <button onClick={() => handleDelete('users', u.uid)} className="text-red-400 hover:text-red-600 p-2"><Trash2 size={18} /></button>
                   </td>
-                  <td className="p-5 text-sm text-gray-500 font-medium">{u.email}</td>
-                  <td className="p-5"><span className={`text-[10px] font-black px-3 py-1 rounded-full ${u.isVerified ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}>{u.isVerified ? 'VERIFIED SELLER' : 'STANDARD'}</span></td>
-                  <td className="p-5 text-right"><button onClick={() => handleDeleteAd(u.uid)} className="p-2 text-gray-400 hover:text-red-600"><Trash2 size={16} /></button></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+
       </div>
     </div>
   );
