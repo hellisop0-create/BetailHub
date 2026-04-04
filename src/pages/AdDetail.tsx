@@ -4,7 +4,7 @@ import { doc, getDoc, collection, query, where, limit, onSnapshot, updateDoc, in
 import { db } from '../firebase';
 import { Ad } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthProvider'; // Added for identity check
+import { useAuth } from '../contexts/AuthContext'; // Added for identity check
 import { formatPrice, cn } from '../lib/utils';
 import { 
   MapPin, Phone, MessageCircle, ShieldCheck, Share2, 
@@ -33,7 +33,7 @@ export default function AdDetail() {
       try {
         const adDoc = await getDoc(doc(db, 'ads', id));
         if (adDoc.exists()) {
-          const adData = { id: adDoc.id, ...adDoc.data() };
+          const adData = { id: adDoc.id, ...adDoc.data() } as Ad;
           setAd(adData);
           
           // Increment view count

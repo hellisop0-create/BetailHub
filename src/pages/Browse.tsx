@@ -44,15 +44,15 @@ export default function Browse() {
   // Custom sorting: Featured ads always come first
   results.sort((a, b) => {
     // 1. Check if one is featured and the other isn't
-    if (a.is_featured && !b.is_featured) return -1;
-    if (!a.is_featured && b.is_featured) return 1;
+    if (a.isFeatured && !b.isFeatured) return -1;
+    if (!a.isFeatured && b.isFeatured) return 1;
 
     // 2. If they are both featured (or both not), use the selected filter
     if (sortFilter === 'price_asc') return a.price - b.price;
     if (sortFilter === 'price_desc') return b.price - a.price;
     
     // Default to newest first
-    return b.createdAt?.seconds - a.createdAt?.seconds;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
   setAds(results);
