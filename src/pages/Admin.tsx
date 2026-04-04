@@ -9,12 +9,11 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// 1. Central Admin List (Add new admins here)
+// 1. Central Admin List
 const ADMIN_EMAILS = [
   'saadatali1403@gmail.com',
   'hellisop0@gmail.com',
-  'mehreensaadat2@gmail.com',
-  'zaheer7@gmail.com'
+  'mehreensaadat2@gmail.com'
 ].map(email => email.toLowerCase().trim());
 
 export default function Admin() {
@@ -24,24 +23,15 @@ export default function Admin() {
   const [users, setUsers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'ads' | 'users'>('ads');
 
-  // 2. Comprehensive Admin Check
   const currentUserEmail = user?.email?.toLowerCase().trim();
   const isAdmin = isAuthAdmin || (currentUserEmail && ADMIN_EMAILS.includes(currentUserEmail));
 
-  // 3. Security & Session Sync
   useEffect(() => {
-    if (!authLoading) {
-      if (!isAdmin) {
-        navigate('/admin-login');
-      } else {
-        // Sync session for the manual login gate
-        sessionStorage.setItem('admin_session_active', 'true');
-        sessionStorage.setItem('admin_user_email', currentUserEmail || '');
-      }
+    if (!authLoading && !isAdmin) {
+      navigate('/admin-login');
     }
-  }, [isAdmin, authLoading, navigate, currentUserEmail]);
+  }, [isAdmin, authLoading, navigate]);
 
-  // 4. Data Listeners
   useEffect(() => {
     if (!isAdmin) return;
     const unsubAds = onSnapshot(collection(db, 'ads'), (s) => 
@@ -53,7 +43,6 @@ export default function Admin() {
     return () => { unsubAds(); unsubUsers(); };
   }, [isAdmin]);
 
-  // Actions
   const handleUpdateStatus = async (id: string, s: 'active' | 'declined') => {
     try { 
       await updateDoc(doc(db, 'ads', id), { status: s }); 
@@ -120,7 +109,6 @@ export default function Admin() {
                     <span className={`mt-1 text-[8px] font-black px-2 py-0.5 rounded border uppercase ${ad.status === 'active' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-red-50 text-red-600 border-red-200'}`}>
                       {ad.status || 'Pending'}
                     </span>
-                    {/* GOLD TAG MOBILE */}
                     {ad.isFeatured && (
                       <span className="mt-1 bg-yellow-400 text-white text-[8px] font-black px-2 py-0.5 rounded border border-yellow-500 uppercase">
                         Gold
@@ -145,7 +133,6 @@ export default function Admin() {
           )) : users.map(u => (
              <div key={u.uid} className="bg-white p-4 rounded-xl border flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  {/* USER PHOTO MOBILE */}
                   {(u.photoURL || u.image) ? (
                     <img src={u.photoURL || u.image} referrerPolicy="no-referrer" className="w-10 h-10 rounded-full object-cover border" />
                   ) : (
@@ -192,7 +179,6 @@ export default function Admin() {
                       <span className={`text-[9px] font-black px-2 py-0.5 rounded border uppercase ${ad.status === 'active' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
                         {ad.status || 'pending'}
                       </span>
-                      {/* GOLD TAG DESKTOP */}
                       {ad.isFeatured && (
                         <span className="bg-yellow-400 text-white text-[9px] font-black px-2 py-0.5 rounded border border-yellow-500 uppercase flex items-center gap-1">
                           <Star size={8} fill="white" /> Gold
@@ -216,15 +202,18 @@ export default function Admin() {
                 <tr key={u.uid} className="hover:bg-gray-50/50 transition-colors">
                   <td className="p-5">
                     <div className="flex items-center gap-3">
-                      {/* USER PHOTO DESKTOP */}
                       {(u.photoURL || u.image) ? (
-                        <img src={u.photoURL || u.image} referrerPolicy="no-referrer" className="w-10 h-10 rounded-full object-cover border shadow-sm" />
+                        <img 
+                          src={u.photoURL || u.image} 
+                          referrerPolicy="no-referrer" 
+                          className="w-10 h-10 rounded-full object-cover border shadow-sm" 
+                        />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 uppercase">
                           {u.displayName?.charAt(0)}
                         </div>
                       )}
-                      <span className="font-bold text-sm">{u.displayName || 'Guest User'}</span>
+                      <span className="font-bold text-sm text-gray-900">{u.displayName || 'Guest User'}</span>
                     </div>
                   </td>
                   <td className="p-5 text-sm text-gray-500">{u.email}</td>
