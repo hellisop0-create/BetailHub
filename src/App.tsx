@@ -1,4 +1,5 @@
 // src/App.tsx
+
 import { AuthProvider } from './contexts/AuthProvider';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
@@ -10,7 +11,8 @@ import AdDetail from './pages/AdDetail';
 import PostAd from './pages/PostAd';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
-import ScrollToTop from './components/ScrollToTop'; // 1. Import your new component
+import AdminLogin from './pages/AdminLogin'; // 1. IMPORT THIS
+import ScrollToTop from './components/ScrollToTop';
 import { Toaster } from 'sonner';
 
 export default function App() {
@@ -18,9 +20,8 @@ export default function App() {
     <LanguageProvider>
       <AuthProvider>
         <Router>
-          {/* 2. Place it here so it runs on every route change */}
-          <ScrollToTop /> 
-          
+          <ScrollToTop />
+
           <div className="min-h-screen flex flex-col bg-gray-50">
             <Navbar />
             <main className="flex-grow">
@@ -30,6 +31,10 @@ export default function App() {
                 <Route path="/ad/:id" element={<AdDetail />} />
                 <Route path="/post-ad" element={<PostAd />} />
                 <Route path="/profile" element={<Profile />} />
+                
+                {/* 2. ADD THE LOGIN ROUTE HERE */}
+                <Route path="/admin-login" element={<AdminLogin />} />
+                
                 <Route path="/admin" element={<Admin />} />
               </Routes>
             </main>

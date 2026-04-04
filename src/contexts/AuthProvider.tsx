@@ -1,5 +1,4 @@
-// src/contexts/AuthProvider.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react'; // 1. Added useContext
 import { AuthContext } from './AuthContext';
 import { User } from '../types';
 import { auth, db, googleProvider } from '../firebase';
@@ -65,4 +64,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       {children}
     </AuthContext.Provider>
   );
+};
+
+// 2. ADD THIS HOOK AT THE BOTTOM
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
