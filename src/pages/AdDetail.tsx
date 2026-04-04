@@ -4,11 +4,12 @@ import { doc, getDoc, collection, query, where, limit, onSnapshot, updateDoc, in
 import { db } from '../firebase';
 import { Ad } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthProvider'; // Added for identity check
 import { formatPrice, cn } from '../lib/utils';
 import { 
   MapPin, Phone, MessageCircle, ShieldCheck, Share2, 
   ChevronLeft, ChevronRight, Flag, Calendar, Weight, 
-  Activity, Info, Crown, Star 
+  Activity, Info, Crown, Star, Hash 
 } from 'lucide-react';
 import AdCard from '../components/AdCard';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,6 +17,7 @@ import { toast } from 'sonner';
 
 export default function AdDetail() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth(); // Get current logged-in user
   const [ad, setAd] = useState<any | null>(null);
   const [relatedAds, setRelatedAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,6 +81,9 @@ export default function AdDetail() {
 
   // Determine if Ad should show Golden styles
   const isGold = ad.isFeatured === true || ad.isFeatured === "true" || ad.is_featured === true || ad.featured === true;
+
+  // Identity Check: Is the viewer the owner or admin?
+  const canSeePrivateInfo = user?.uid === ad.sellerUid || user?.email === 'hellisop0@gmail.com';
 
   // Format WhatsApp Link (Removes non-digits for the URL)
   const cleanPhone = ad.phoneNumber?.replace(/\D/g, '');
@@ -218,6 +223,26 @@ export default function AdDetail() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            
+            {/* UNIQUE AD ID SECTION: Only visible to Owner/Admin */}
+            {canSeePrivateInfo && (
+              <div className="bg-blue-50 border-2 border-blue-100 rounded-2xl p-5 shadow-sm">
+                <div className="flex items-center gap-2 text-blue-800 font-black text-xs uppercase tracking-widest mb-3">
+                  <ShieldCheck className="w-4 h-4" />
+                  Seller Dashboard
+                </div>
+                <div className="bg-white rounded-xl p-3 border border-blue-200 flex justify-between items-center shadow-inner">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase">Unique Ad ID</span>
+                  <span className="text-sm font-mono font-black text-blue-700 selection:bg-blue-100">
+                    #{ad.id.slice(-8).toUpperCase()}
+                  </span>
+                </div>
+                <p className="text-[9px] text-blue-500 mt-2 text-center font-medium">
+                  Visible only to you and the Admin
+                </p>
+              </div>
+            )}
+
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 sticky top-24">
               <h3 className="font-bold text-gray-900 mb-6 border-b pb-2">Seller Details</h3>
               <div className="flex items-center gap-4 mb-8">
