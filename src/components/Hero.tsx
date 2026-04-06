@@ -40,7 +40,7 @@ export default function Hero() {
             Find everything in <span className="text-green-400">Pakistan</span>
           </h1>
           <p className="text-green-100 text-lg opacity-90">
-            Buy and Sell Cars, Mobiles, Jobs and more...
+            Buy and Sell Livestock Easily.
           </p>
         </motion.div>
 
