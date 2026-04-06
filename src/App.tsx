@@ -30,6 +30,7 @@ export default function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/search" element={<SearchPage />} />
                 <Route path="/browse" element={<Browse />} />
+                <Route path="/edit-ad/:id" element={<EditAd />} />
                 <Route path="/ad/:id" element={<AdDetail />} />
                 <Route path="/post-ad" element={<PostAd />} />
                 <Route path="/profile" element={<Profile />} />
