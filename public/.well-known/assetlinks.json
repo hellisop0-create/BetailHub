@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.pakistan.mandi",
+    "sha256_cert_fingerprints": ["YOUR_SHA_256_FINGERPRINT_FROM_PWABUILDER"]
+  }
+}]
