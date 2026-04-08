@@ -42,8 +42,10 @@ export default function App() {
                   </div>
                   <h2 className="text-2xl font-extrabold text-gray-900 mb-2">Caution Notice</h2>
                   <p className="text-gray-600 mb-8 leading-relaxed">
-                    Please ensure you read our safety guidelines before proceeding. 
-                    Always verify listings before making any transactions.
+                    1. Make sure to meet the Buyer/Seller in the public/crowded place. 
+                    2. Do not pay anything in advance.
+                    3. Do not post anything prohibited on this website.
+                    <h2 className="text-m font-extrabold text-gray-900 mb-2">Pakistan Livestock Mandi and Admins are not responsible for any kind of scam</h2>
                   </p>
                   <button
                     onClick={() => setShowCaution(false)}
