@@ -29,26 +29,27 @@ export default function App() {
         <Router>
           <ScrollToTop />
 
-          <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
-            {/* Caution Popup */}
+          <div className="min-h-screen flex flex-col bg-gray-50 font-sans relative">
+            
+            {/* Caution Popup - Glass Overlay */}
             {showCaution && (
-              <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-70 p-4">
-                <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-6 text-center">
+              <div className="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-md bg-white/30 p-4">
+                <div className="bg-white border border-gray-100 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center ring-1 ring-black/5">
                   <div className="flex justify-center mb-4">
-                    <div className="bg-amber-100 p-3 rounded-full">
-                      <span className="text-3xl">⚠️</span>
+                    <div className="bg-amber-50 p-4 rounded-full">
+                      <span className="text-4xl">⚠️</span>
                     </div>
                   </div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Caution Notice</h2>
-                  <p className="text-gray-600 mb-6">
+                  <h2 className="text-2xl font-extrabold text-gray-900 mb-2">Caution Notice</h2>
+                  <p className="text-gray-600 mb-8 leading-relaxed">
                     Please ensure you read our safety guidelines before proceeding. 
                     Always verify listings before making any transactions.
                   </p>
                   <button
                     onClick={() => setShowCaution(false)}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors duration-200"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all active:scale-95 shadow-lg"
                   >
-                    I Understand
+                    I Understand & Enter
                   </button>
                 </div>
               </div>
@@ -58,7 +59,7 @@ export default function App() {
             <Navbar />
 
             {/* Main Content Area */}
-            <main className={`flex-grow ${showCaution ? 'blur-sm pointer-events-none' : ''}`}>
+            <main className="flex-grow">
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<Home />} />
