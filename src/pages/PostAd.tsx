@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -90,6 +90,23 @@ export default function PostAd() {
     
     setLoading(true);
     try {
+      // Monthly Limit Check (Max 7 ads in 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const q = query(
+        collection(db, 'ads'),
+        where('sellerUid', '==', user.uid),
+        where('createdAt', '>=', thirtyDaysAgo.toISOString())
+      );
+      
+      const snapshot = await getDocs(q);
+      if (snapshot.size >= 7) {
+        toast.error("You have reached the limit of 7 ads per month.");
+        setLoading(false);
+        return;
+      }
+
       const uploadedUrls: string[] = [];
 
       for (const file of selectedFiles) {
