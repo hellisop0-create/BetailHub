@@ -281,7 +281,15 @@ export default function Messages() {
             <div className="bg-white border-b border-gray-100 shadow-sm z-30 flex-shrink-0">
               <div className="px-4 md:px-6 py-3 md:py-4 flex items-center justify-between relative">
                 <div className="flex items-center gap-3 min-w-0">
-                  <button onClick={() => setActiveChat(null)} className="md:hidden p-2 -ml-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"><ChevronLeft /></button>
+                  {/* Back button visible only on mobile and tablet screens */}
+                  <button 
+                    onClick={() => setActiveChat(null)} 
+                    className="md:hidden p-2 -ml-2 text-gray-700 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
+                    aria-label="Back to chats"
+                  >
+                    <ChevronLeft size={24} strokeWidth={2.5} />
+                  </button>
+                  
                   <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-green-600 to-green-800 text-white flex items-center justify-center font-bold shadow-sm flex-shrink-0">
                     {((activeChat.sellerId === user.uid ? activeChat.buyerName : activeChat.sellerName) || "U").charAt(0)}
                   </div>
