@@ -31,44 +31,32 @@ export default function Messages() {
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   useEffect(() => { scrollToBottom(); }, [messages]);
 
-  // Unified Cooldown Logic
   const getCooldownStatus = (chat: any) => {
     if (!chat?.leftAt || !user?.uid) return { isRestricted: false, remainingHours: 0 };
-    
     const userLeftAt = chat.leftAt[user.uid] || chat.leftAt[user.displayName || ''];
     if (!userLeftAt) return { isRestricted: false, remainingHours: 0 };
-
     const leftTime = new Date(userLeftAt).getTime();
     const TWELVE_HOURS = 12 * 60 * 60 * 1000;
     const now = Date.now();
-    
     const diff = now - leftTime;
     const isRestricted = diff < TWELVE_HOURS;
     const remainingMillis = TWELVE_HOURS - diff;
     const remainingHours = Math.ceil(remainingMillis / (1000 * 60 * 60));
-
     return { isRestricted, remainingHours: Math.max(0, remainingHours) };
   };
 
-  // Unified Leave Chat Logic
   const handleLeaveChatAction = async (chatToLeave: any) => {
     if (!chatToLeave || !user) return;
-    
     const warningText = "After leaving, you can't chat for 12 hours. Proceed?";
     if (!window.confirm(warningText)) return;
-    
     try {
       const userName = user.displayName || "Unknown User";
-
       await updateDoc(doc(db, 'chats', chatToLeave.id), {
         [`leftAt.${userName}`]: new Date().toISOString()
       });
-
       await sendMessage(chatToLeave.id, user.uid, `${userName} left the chat`);
-      
       setOpenSidebarMenu(null);
       setShowMenu(false);
-      
       toast.success("Left chat. 12h cooldown active.");
     } catch (error) {
       toast.error("Action failed");
@@ -78,13 +66,11 @@ export default function Messages() {
   const handleDeleteChat = async (e: React.MouseEvent, chatId: string) => {
     e.stopPropagation();
     if (!window.confirm("Delete this chat? This will remove all messages for everyone.")) return;
-
     try {
       const messagesSnapshot = await getDocs(collection(db, 'chats', chatId, 'messages'));
       const batch = writeBatch(db);
       messagesSnapshot.docs.forEach((msg) => batch.delete(msg.ref));
       await batch.commit();
-
       await deleteDoc(doc(db, 'chats', chatId));
       if (activeChat?.id === chatId) setActiveChat(null);
       setOpenSidebarMenu(null);
@@ -104,14 +90,12 @@ export default function Messages() {
     } catch (error) { toast.error("Action failed"); }
   };
 
-  // Syncs the list of chats
   useEffect(() => {
     if (!user) return;
     const q = query(collection(db, 'chats'), where('participants', 'array-contains', user.uid), orderBy('updatedAt', 'desc'));
     return onSnapshot(q, (snapshot) => {
       const allChats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setChats(allChats);
-      
       if (activeChat) {
         const updatedActive = allChats.find(c => c.id === activeChat.id);
         if (updatedActive) setActiveChat(updatedActive);
@@ -119,13 +103,11 @@ export default function Messages() {
     });
   }, [user, activeChat?.id]);
 
-  // Fetch Ad details
   useEffect(() => {
     if (!activeChat?.adId) { setActiveAd(null); return; }
     getDoc(doc(db, 'ads', activeChat.adId)).then(s => s.exists() && setActiveAd(s.data()));
   }, [activeChat?.adId]);
 
-  // Fetch messages
   useEffect(() => {
     if (!activeChat?.id) return;
     const q = query(collection(db, 'chats', activeChat.id, 'messages'), orderBy('timestamp', 'asc'), limit(50));
@@ -134,15 +116,12 @@ export default function Messages() {
     });
   }, [activeChat?.id]);
 
-  // --- START READ RECEIPTS LOGIC ---
   useEffect(() => {
     if (!activeChat?.id || !user?.uid || messages.length === 0) return;
-
     const markAsSeen = async () => {
       const unreadMessages = messages.filter(
         msg => msg.senderId !== user.uid && msg.status !== 'seen' && !msg.text?.includes('left the chat')
       );
-
       if (unreadMessages.length > 0) {
         const batch = writeBatch(db);
         unreadMessages.forEach((msg) => {
@@ -152,21 +131,17 @@ export default function Messages() {
         await batch.commit();
       }
     };
-
     markAsSeen();
   }, [activeChat?.id, messages, user?.uid]);
-  // --- END READ RECEIPTS LOGIC ---
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeChat || !user) return;
-    
     const { isRestricted } = getCooldownStatus(activeChat);
     if (!inputText.trim() || activeChat.status === 'blocked' || isRestricted) {
       if (isRestricted) toast.error("You are in cooldown period.");
       return;
     }
-
     const text = inputText; 
     setInputText('');
     await sendMessage(activeChat.id, user.uid, text);
@@ -208,7 +183,7 @@ export default function Messages() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto overflow-x-visible pt-2">
+        <div className="flex-1 overflow-y-auto pt-2">
           {filteredChats.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 text-gray-400 px-6 text-center">
               <MessageCircle size={32} className="mb-3 opacity-30" />
@@ -223,7 +198,7 @@ export default function Messages() {
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg uppercase flex-shrink-0 ${activeChat?.id === chat.id ? 'bg-green-600 text-white shadow-md' : 'bg-green-100 text-green-700'}`}>
                     {(otherUserName || "U").charAt(0)}
                   </div>
-                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  <div className="flex-1 min-w-0">
                     <h3 className={`font-bold truncate text-sm ${activeChat?.id === chat.id ? 'text-green-900' : 'text-gray-900'}`}>
                       {otherUserName || "User"}
                     </h3>
@@ -233,38 +208,6 @@ export default function Messages() {
                     <p className={`text-xs truncate ${activeChat?.id === chat.id ? 'text-green-700/80 font-medium' : 'text-gray-500'}`}>
                       {chat.lastMessage || "No messages yet"}
                     </p>
-                  </div>
-                  
-                  <div className="relative self-center">
-                    <button 
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        setOpenSidebarMenu(openSidebarMenu === chat.id ? null : chat.id); 
-                      }} 
-                      className="p-2 hover:bg-white rounded-full md:opacity-0 group-hover:opacity-100 transition-all text-gray-400 hover:text-gray-600 shadow-sm"
-                    >
-                      <MoreVertical size={16} />
-                    </button>
-                    
-                    {openSidebarMenu === chat.id && (
-                      <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-100 rounded-xl shadow-2xl py-1.5 z-[100] overflow-hidden">
-                        <button 
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            handleLeaveChatAction(chat); 
-                          }} 
-                          className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors border-b border-gray-50"
-                        >
-                          <LogOut size={14} /> Leave Chat
-                        </button>
-                        <button 
-                          onClick={(e) => handleDeleteChat(e, chat.id)} 
-                          className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
-                        >
-                          <Trash2 size={14} /> Delete Chat
-                        </button>
-                      </div>
-                    )}
                   </div>
                 </div>
               );
@@ -280,13 +223,14 @@ export default function Messages() {
             <div className="bg-white border-b border-gray-100 shadow-sm z-30 flex-shrink-0">
               <div className="px-4 md:px-6 py-3 md:py-4 flex items-center justify-between relative">
                 <div className="flex items-center gap-3 min-w-0">
-                  {/* Back button logic for mobile and tablet only */}
+                  
+                  {/* --- BACK BUTTON (Targeting screens below 1024px) --- */}
                   <button 
                     onClick={() => setActiveChat(null)} 
-                    className="md:hidden p-2 -ml-2 text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-full transition-all flex items-center justify-center"
-                    style={{ display: 'flex' }}
+                    className="lg:hidden p-2 -ml-2 text-white bg-red-600 hover:bg-red-700 rounded-full transition-all flex items-center justify-center z-50 shadow-lg"
+                    aria-label="Back"
                   >
-                    <ChevronLeft size={24} strokeWidth={3} />
+                    <ChevronLeft size={28} strokeWidth={3} />
                   </button>
                   
                   <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-green-600 to-green-800 text-white flex items-center justify-center font-bold shadow-sm flex-shrink-0">
