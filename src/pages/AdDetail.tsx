@@ -67,7 +67,6 @@ export default function AdDetail() {
     fetchAd();
   }, [id, navigate]);
 
-  // Added handleStartChat Logic
   const handleStartChat = async () => {
     if (!user) {
       toast.error("Please login to message the seller");
@@ -79,10 +78,12 @@ export default function AdDetail() {
         user.uid, 
         ad.sellerUid, 
         ad.id, 
-        ad.title
+        ad.title,
+        ad.sellerName // <--- Add this 5th argument
       );
       navigate('/messages', { state: { selectedChatId: chatId } });
     } catch (error) {
+      console.error("Chat error:", error); // Useful for debugging
       toast.error("Could not start chat. Please try again.");
     }
   };
