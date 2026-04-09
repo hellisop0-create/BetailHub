@@ -10,7 +10,7 @@ import { getOrCreateChat } from '../lib/chat-service';
 import { 
   MapPin, Phone, MessageCircle, MessageSquare, ShieldCheck, Share2, 
   ChevronLeft, ChevronRight, Calendar, Weight, 
-  Activity, Info, Crown, Star, Hash, EyeOff 
+  Activity, Info, Crown, Star, Hash, EyeOff, ExternalLink
 } from 'lucide-react';
 import AdCard from '../components/AdCard';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -82,6 +82,7 @@ export default function AdDetail() {
     ? ad.whatsappLink 
     : `https://wa.me/${cleanPhone}`;
 
+  // UPDATED: Start Chat Logic
   const handleStartChat = async () => {
     if (!user) {
       toast.error("Please login to message the seller");
@@ -89,15 +90,19 @@ export default function AdDetail() {
     }
 
     try {
+      // We pass 5 arguments: buyerId, sellerId, adId, adTitle, sellerName
       const chatId = await getOrCreateChat(
         user.uid, 
         ad.sellerUid, 
         ad.id, 
-        ad.title
+        ad.title,
+        ad.sellerName || "Seller" // Ensures the name shows in the chat header
       );
-      // Navigate to Messages and pass the chatId to open it automatically
+      
+      // Navigate to Messages and pass the ID to open it
       navigate('/messages', { state: { selectedChatId: chatId } });
     } catch (error) {
+      console.error("Chat Error:", error);
       toast.error("Could not start chat. Please try again.");
     }
   };
@@ -261,7 +266,7 @@ export default function AdDetail() {
               </div>
 
               <div className="space-y-3">
-                {/* Internal Chat: Hide if viewer is the owner */}
+                {/* Internal Chat: Trigger with sellerName */}
                 {!isOwner && (
                   <button 
                     onClick={handleStartChat}
@@ -271,7 +276,6 @@ export default function AdDetail() {
                   </button>
                 )}
 
-                {/* External Links: Show if not hidden or if viewer is owner */}
                 {(!ad.hidePhoneNumber || canSeePrivateInfo) ? (
                   <>
                     <a 
