@@ -5,18 +5,15 @@ import {
   getDocs, 
   addDoc, 
   serverTimestamp, 
-  orderBy, 
-  onSnapshot,
   doc,
   updateDoc
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
-// Start or Get a Chat Room
 export const getOrCreateChat = async (buyerId: string, sellerId: string, adId: string, adTitle: string) => {
   const chatsRef = collection(db, 'chats');
   
-  // Check if a chat already exists for this specific animal between these two people
+  // Check if a chat already exists for this specific ad between these two people
   const q = query(
     chatsRef, 
     where('adId', '==', adId),
@@ -30,7 +27,7 @@ export const getOrCreateChat = async (buyerId: string, sellerId: string, adId: s
     return existingChat.id;
   }
 
-  // Create new chat if not found
+  // Create new chat room if not found
   const newChat = await addDoc(chatsRef, {
     adId,
     adTitle,
@@ -44,7 +41,6 @@ export const getOrCreateChat = async (buyerId: string, sellerId: string, adId: s
   return newChat.id;
 };
 
-// Send a Message
 export const sendMessage = async (chatId: string, senderId: string, text: string) => {
   const messagesRef = collection(db, 'chats', chatId, 'messages');
   
@@ -54,7 +50,7 @@ export const sendMessage = async (chatId: string, senderId: string, text: string
     timestamp: serverTimestamp(),
   });
 
-  // Update the main chat doc with the preview
+  // Update the parent chat document for the sidebar preview
   await updateDoc(doc(db, 'chats', chatId), {
     lastMessage: text,
     updatedAt: serverTimestamp()
