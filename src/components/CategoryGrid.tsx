@@ -18,22 +18,22 @@ const categories = [
   { 
     id: 'Goat', 
     image: 'https://i.postimg.cc/KzPfDcpx/goat.jpg', 
-    color: 'bg-green-50' 
+    color: 'bg-green-100' 
   },
   { 
     id: 'Sheep', 
     image: 'https://i.postimg.cc/bvQV3Rsq/sheep.jpg', 
-    color: 'bg-green-50' 
+    color: 'bg-green-100' 
   },
   { 
     id: 'Camel', 
     image: 'https://i.postimg.cc/KYnpJ549/camel.jpg', 
-    color: 'bg-green-50' 
+    color: 'bg-green-100' 
   },
   { 
     id: 'Others', 
     image: 'https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=300', 
-    color: 'bg-green-50' 
+    color: 'bg-green-100' 
   },
 ];
 
