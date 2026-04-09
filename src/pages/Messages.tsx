@@ -9,7 +9,8 @@ import { sendMessage } from '../lib/chat-service';
 import { 
   Send, ChevronLeft, MessageCircle, 
   MoreVertical, Check, CheckCheck, ExternalLink,
-  Ban, LogOut, ShieldAlert, Trash2, ShoppingBag, Tag, Inbox
+  Ban, LogOut, ShieldAlert, Trash2, ShoppingBag, Tag, Inbox,
+  ArrowLeft
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -186,7 +187,12 @@ export default function Messages() {
       {/* Sidebar */}
       <div className={`w-full md:w-[380px] border-r border-gray-100 flex flex-col bg-white h-full shadow-sm transition-all duration-300 ${activeChat ? 'hidden md:flex' : 'flex'}`}>
         <div className="pt-6 px-6 pb-4 border-b border-gray-100 flex-shrink-0">
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight mb-5">Messages</h1>
+          <div className="flex items-center justify-between mb-5">
+            <h1 className="text-2xl font-black text-gray-900 tracking-tight">Messages</h1>
+            <Link to="/chats" className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors">
+              <ArrowLeft size={20} />
+            </Link>
+          </div>
           <div className="flex bg-gray-100 p-1 rounded-xl relative">
             <button onClick={() => setChatFilter('all')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-[11px] font-black uppercase rounded-lg transition-all duration-300 ${chatFilter === 'all' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
               <Inbox size={14} /> All

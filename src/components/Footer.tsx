@@ -51,9 +51,9 @@ export default function Footer() {
           <div>
             <h3 className="text-lg font-bold mb-6">Categories</h3>
             <ul className="space-y-3 text-green-100 text-sm">
-              <li><Link to="/browse?category=Cow" className="hover:text-white transition-colors">Cows</Link></li>
-              <li><Link to="/browse?category=Buffalo" className="hover:text-white transition-colors">Buffaloes</Link></li>
-              <li><Link to="/browse?category=Goat" className="hover:text-white transition-colors">Goats</Link></li>
+              <li><Link to="/browse?category=Cow" className="hover:text-white transition-colors">Cattle</Link></li>
+              <li><Link to="/browse?category=Buffalo" className="hover:text-white transition-colors">Buffalo</Link></li>
+              <li><Link to="/browse?category=Goat" className="hover:text-white transition-colors">Goat</Link></li>
               <li><Link to="/browse?category=Sheep" className="hover:text-white transition-colors">Sheep</Link></li>
               <li><Link to="/browse?category=Camel" className="hover:text-white transition-colors">Camel</Link></li>
               <li><Link to="/browse?category=Others" className="hover:text-white transition-colors">Others</Link></li>

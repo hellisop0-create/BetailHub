@@ -23,7 +23,7 @@ const translations: Translations = {
   favorites: { en: 'Favorites', ur: 'پسندیدہ' },
   profile: { en: 'Profile', ur: 'پروفائل' },
   admin: { en: 'Admin', ur: 'ایڈمن' },
-  cow: { en: 'Cow', ur: 'گائے' },
+  cattle: { en: 'Cattle', ur: 'گائے' },
   buffalo: { en: 'Buffalo', ur: 'بھینس' },
   goat: { en: 'Goat', ur: 'بکری' },
   sheep: { en: 'Sheep', ur: 'بھیڑ' },

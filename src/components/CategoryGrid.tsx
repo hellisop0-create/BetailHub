@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 // Using Web URLs so Google AI Studio can display them immediately
 const categories = [
   {
-    id: 'Cow',
+    id: 'Cattle',
     image: 'https://i.postimg.cc/KzSQT3Nn/cow.jpg',
     color: 'bg-green-100'
   },
