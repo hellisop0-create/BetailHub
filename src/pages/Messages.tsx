@@ -34,7 +34,6 @@ export default function Messages() {
   const getCooldownStatus = (chat: any) => {
     if (!chat?.leftAt || !user?.uid) return { isRestricted: false, remainingHours: 0 };
     
-    // Logic to check if the user is restricted based on UID or Name in the map
     const userLeftAt = chat.leftAt[user.uid] || chat.leftAt[user.displayName || ''];
     if (!userLeftAt) return { isRestricted: false, remainingHours: 0 };
 
@@ -60,7 +59,6 @@ export default function Messages() {
     try {
       const userName = user.displayName || "Unknown User";
 
-      // Updated: This now uses the Username as the key in Firestore instead of the UID
       await updateDoc(doc(db, 'chats', chatToLeave.id), {
         [`leftAt.${userName}`]: new Date().toISOString()
       });
@@ -134,6 +132,29 @@ export default function Messages() {
       setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
   }, [activeChat?.id]);
+
+  // --- START READ RECEIPTS LOGIC ---
+  useEffect(() => {
+    if (!activeChat?.id || !user?.uid || messages.length === 0) return;
+
+    const markAsSeen = async () => {
+      const unreadMessages = messages.filter(
+        msg => msg.senderId !== user.uid && msg.status !== 'seen' && !msg.text?.includes('left the chat')
+      );
+
+      if (unreadMessages.length > 0) {
+        const batch = writeBatch(db);
+        unreadMessages.forEach((msg) => {
+          const msgRef = doc(db, 'chats', activeChat.id, 'messages', msg.id);
+          batch.update(msgRef, { status: 'seen' });
+        });
+        await batch.commit();
+      }
+    };
+
+    markAsSeen();
+  }, [activeChat?.id, messages, user?.uid]);
+  // --- END READ RECEIPTS LOGIC ---
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
