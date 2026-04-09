@@ -9,7 +9,7 @@ import { sendMessage } from '../lib/chat-service';
 import { 
   Send, ChevronLeft, MessageCircle, 
   MoreVertical, Check, CheckCheck, ExternalLink,
-  Ban, LogOut, ShieldAlert, Trash2, ShoppingBag, Tag, Inbox
+  Ban, LogOut, ShieldAlert, Trash2, ShoppingBag, Tag, Inbox, UserMinus
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -25,9 +25,7 @@ export default function Messages() {
   const [showMenu, setShowMenu] = useState(false);
   const [openSidebarMenu, setOpenSidebarMenu] = useState<string | null>(null);
   
-  // NEW: Filter state for tabs
   const [chatFilter, setChatFilter] = useState<'all' | 'buying' | 'selling'>('all');
-  
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -57,19 +55,31 @@ export default function Messages() {
     if (!window.confirm("Block this user? You won't receive further messages.")) return;
     try {
       await updateDoc(doc(db, 'chats', activeChat.id), { status: 'blocked', blockedBy: user.uid });
-      toast.error("User Blocked");
+      toast.success("User Blocked");
       setShowMenu(false);
     } catch (error) { toast.error("Action failed"); }
   };
 
+  // UPDATED: Leave Chat Logic
   const handleLeaveChat = async () => {
     if (!activeChat || !user) return;
-    if (!window.confirm("Leave this conversation?")) return;
+    if (!window.confirm("Leave this conversation? You will not be able to message each other anymore.")) return;
+    
     try {
-      await updateDoc(doc(db, 'chats', activeChat.id), { participants: arrayRemove(user.uid) });
+      // 1. Remove user from participants so it disappears from their inbox.
+      // 2. Set status to 'left' so the other user cannot send messages either.
+      await updateDoc(doc(db, 'chats', activeChat.id), { 
+        participants: arrayRemove(user.uid),
+        status: 'left',
+        leftBy: user.uid
+      });
+      
       setActiveChat(null);
       setShowMenu(false);
-    } catch (error) { toast.error("Action failed"); }
+      toast.success("You have successfully left the chat");
+    } catch (error) { 
+      toast.error("Failed to leave chat"); 
+    }
   };
 
   useEffect(() => {
@@ -93,17 +103,16 @@ export default function Messages() {
     });
   }, [activeChat]);
 
+  // UPDATED: Prevent sending if chat is blocked OR left
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim() || !activeChat || !user || activeChat.status === 'blocked') return;
+    if (!inputText.trim() || !activeChat || !user || activeChat.status === 'blocked' || activeChat.status === 'left') return;
     const text = inputText; setInputText('');
     await sendMessage(activeChat.id, user.uid, text);
   };
 
-  // NEW: Filter logic
   const filteredChats = chats.filter(chat => {
     if (chatFilter === 'all') return true;
-    // Assuming your chat doc has a 'sellerId' field to identify the owner of the ad
     if (chatFilter === 'selling') return chat.sellerId === user.uid;
     if (chatFilter === 'buying') return chat.sellerId !== user.uid;
     return true;
@@ -115,77 +124,46 @@ export default function Messages() {
     <div className="fixed inset-0 flex bg-white z-40 font-sans">
       {/* Sidebar */}
       <div className={`w-full md:w-[380px] border-r border-gray-100 flex flex-col bg-white h-full shadow-sm ${activeChat ? 'hidden md:flex' : 'flex'}`}>
-        
-        {/* Sidebar Header & Tabs */}
         <div className="pt-6 px-6 pb-4 border-b border-gray-100">
           <h1 className="text-2xl font-black text-gray-900 tracking-tight mb-5">Messages</h1>
-          
-          {/* Custom Segmented Control (Tabs) */}
           <div className="flex bg-gray-100 p-1 rounded-xl relative">
-            <button 
-              onClick={() => setChatFilter('all')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all duration-200 ${chatFilter === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
+            <button onClick={() => setChatFilter('all')} className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all duration-200 ${chatFilter === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
               <Inbox size={14} /> All
             </button>
-            <button 
-              onClick={() => setChatFilter('buying')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all duration-200 ${chatFilter === 'buying' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
+            <button onClick={() => setChatFilter('buying')} className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all duration-200 ${chatFilter === 'buying' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
               <ShoppingBag size={14} /> Buying
             </button>
-            <button 
-              onClick={() => setChatFilter('selling')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all duration-200 ${chatFilter === 'selling' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
+            <button onClick={() => setChatFilter('selling')} className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all duration-200 ${chatFilter === 'selling' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
               <Tag size={14} /> Selling
             </button>
           </div>
         </div>
 
-        {/* Chat List */}
         <div className="flex-1 overflow-y-auto pt-2">
           {filteredChats.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 text-gray-400 px-6 text-center">
               <MessageCircle size={32} className="mb-3 opacity-30" />
               <p className="text-sm font-medium">No conversations found</p>
-              <p className="text-xs mt-1">Try changing your filter to see other chats.</p>
             </div>
           ) : (
             filteredChats.map(chat => (
-              <div 
-                key={chat.id} 
-                onClick={() => setActiveChat(chat)} 
-                className={`p-4 mx-3 my-1.5 rounded-2xl cursor-pointer flex gap-4 relative group transition-all duration-200 ${activeChat?.id === chat.id ? 'bg-green-50/80 shadow-sm ring-1 ring-green-100' : 'hover:bg-gray-50'}`}
-              >
+              <div key={chat.id} onClick={() => setActiveChat(chat)} className={`p-4 mx-3 my-1.5 rounded-2xl cursor-pointer flex gap-4 relative group transition-all duration-200 ${activeChat?.id === chat.id ? 'bg-green-50/80 shadow-sm ring-1 ring-green-100' : 'hover:bg-gray-50'}`}>
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg uppercase flex-shrink-0 ${activeChat?.id === chat.id ? 'bg-green-600 text-white shadow-md' : 'bg-green-100 text-green-700'}`}>
                   {chat.adTitle?.charAt(0) || "C"}
                 </div>
-                
                 <div className="flex-1 min-w-0 flex flex-col justify-center">
-                  <div className="flex justify-between items-center mb-0.5">
-                    <h3 className={`font-bold truncate text-sm ${activeChat?.id === chat.id ? 'text-green-900' : 'text-gray-900'}`}>{chat.adTitle || "Unknown Ad"}</h3>
-                  </div>
+                  <h3 className={`font-bold truncate text-sm mb-0.5 ${activeChat?.id === chat.id ? 'text-green-900' : 'text-gray-900'}`}>{chat.adTitle || "Unknown Ad"}</h3>
                   <p className={`text-xs truncate ${activeChat?.id === chat.id ? 'text-green-700/80 font-medium' : 'text-gray-500'}`}>{chat.lastMessage || "No messages yet"}</p>
                 </div>
-                
-                {/* Sidebar 3-dot Menu */}
                 <div className="relative self-center">
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); setOpenSidebarMenu(openSidebarMenu === chat.id ? null : chat.id); }}
-                    className="p-2 hover:bg-white rounded-full opacity-0 group-hover:opacity-100 transition-all text-gray-400 hover:text-gray-600 shadow-sm"
-                  >
+                  <button onClick={(e) => { e.stopPropagation(); setOpenSidebarMenu(openSidebarMenu === chat.id ? null : chat.id); }} className="p-2 hover:bg-white rounded-full opacity-0 group-hover:opacity-100 transition-all text-gray-400 hover:text-gray-600 shadow-sm">
                     <MoreVertical size={16} />
                   </button>
-
                   {openSidebarMenu === chat.id && (
                     <>
                       <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setOpenSidebarMenu(null); }} />
                       <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-100 rounded-xl shadow-xl py-1.5 z-20 overflow-hidden">
-                        <button 
-                          onClick={(e) => handleDeleteChat(e, chat.id)}
-                          className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
-                        >
+                        <button onClick={(e) => handleDeleteChat(e, chat.id)} className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors">
                           <Trash2 size={14} /> Delete Chat
                         </button>
                       </div>
@@ -202,7 +180,6 @@ export default function Messages() {
       <div className={`flex-1 flex flex-col bg-gray-50/30 h-full relative ${!activeChat ? 'hidden md:flex items-center justify-center' : 'flex'}`}>
         {activeChat ? (
           <>
-            {/* Header */}
             <div className="bg-white border-b border-gray-100 shadow-sm z-30">
               <div className="px-6 py-4 flex items-center justify-between relative">
                 <div className="flex items-center gap-3">
@@ -212,7 +189,6 @@ export default function Messages() {
                   </div>
                   <div>
                     <h3 className="font-black text-gray-900 leading-none">{activeChat.sellerName || "Seller"}</h3>
-                    <p className="text-[10px] text-green-600 font-bold tracking-widest uppercase mt-1">Online</p>
                   </div>
                 </div>
 
@@ -234,7 +210,6 @@ export default function Messages() {
                 </div>
               </div>
 
-              {/* Ad Card Banner */}
               {activeAd && (
                 <div className="px-6 py-3 flex items-center justify-between bg-white border-t border-gray-50">
                   <div className="flex items-center gap-4">
@@ -253,9 +228,8 @@ export default function Messages() {
               )}
             </div>
 
-            {/* Chat Messages */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6" onClick={() => { setShowMenu(false); setOpenSidebarMenu(null); }}>
-              {messages.map((msg, idx) => {
+              {messages.map((msg) => {
                 const isMe = msg.senderId === user.uid;
                 return (
                   <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
@@ -272,10 +246,14 @@ export default function Messages() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
+            {/* UPDATED: Input Area Logic */}
             {activeChat.status === 'blocked' ? (
               <div className="p-5 bg-red-50/80 text-red-700 border-t border-red-100 flex items-center justify-center gap-3 italic text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
                 <ShieldAlert size={18} /> Chat is blocked
+              </div>
+            ) : activeChat.status === 'left' ? (
+              <div className="p-5 bg-gray-100/80 text-gray-600 border-t border-gray-200 flex items-center justify-center gap-3 italic text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
+                <UserMinus size={18} /> The other user has left the conversation
               </div>
             ) : (
               <div className="p-4 bg-white border-t border-gray-100 shadow-[0_-4px_20px_-15px_rgba(0,0,0,0.1)] z-20">
