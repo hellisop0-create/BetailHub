@@ -60,6 +60,9 @@ export default function Messages() {
       await updateDoc(doc(db, 'chats', chatToLeave.id), {
         [`leftAt.${user.uid}`]: new Date().toISOString()
       });
+
+      // Added: Notify the chat that the user has left
+      await sendMessage(chatToLeave.id, 'system', `${user.displayName || 'User'} left the chat`);
       
       setOpenSidebarMenu(null);
       setShowMenu(false);
@@ -286,6 +289,18 @@ export default function Messages() {
             <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 bg-gray-50/50">
               {messages.map((msg) => {
                 const isMe = msg.senderId === user.uid;
+
+                // Added: Special rendering for system messages
+                if (msg.senderId === 'system') {
+                  return (
+                    <div key={msg.id} className="flex justify-center my-2">
+                      <span className="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-200">
+                        {msg.text}
+                      </span>
+                    </div>
+                  );
+                }
+
                 return (
                   <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[85%] md:max-w-[75%] p-3 md:p-3.5 rounded-2xl shadow-sm relative ${isMe ? 'bg-green-700 text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-100'}`}>
