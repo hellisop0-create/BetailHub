@@ -11,7 +11,7 @@ import { getOrCreateChat } from '../lib/chat-service';
 import { 
   MapPin, Phone, MessageCircle, MessageSquare, ShieldCheck, Share2, 
   ChevronLeft, ChevronRight, Flag, Calendar, Weight, 
-  Activity, Info, Crown, Star, Hash, EyeOff, X, Maximize2 
+  Activity, Info, Crown, Star, Hash, EyeOff, X, Maximize2, ZoomIn 
 } from 'lucide-react';
 import AdCard from '../components/AdCard';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -68,7 +68,7 @@ export default function AdDetail() {
     fetchAd();
   }, [id, navigate]);
 
-  // Lock scroll when fullscreen is active to prevent background scrolling on mobile
+  // Lock scroll when fullscreen is active
   useEffect(() => {
     if (isFullScreen) {
       document.body.style.overflow = 'hidden';
@@ -173,8 +173,7 @@ export default function AdDetail() {
                       />
                     </AnimatePresence>
                     
-                    {/* Expand Hint - Hidden on touch devices usually, shown on hover for desktop */}
-                    <div className="absolute top-4 right-4 p-2 bg-black/40 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">
+                    <div className="absolute top-4 right-4 p-2 bg-black/40 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
                       <Maximize2 className="w-5 h-5" />
                     </div>
 
@@ -242,23 +241,23 @@ export default function AdDetail() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
                 <div className="bg-gray-50 p-4 rounded-xl text-center border border-gray-100">
                   <Info className="w-5 h-5 mx-auto mb-2 text-green-600" />
-                  <div className="text-[10px] text-gray-400 uppercase font-bold">Breed</div>
-                  <div className="font-semibold text-gray-800 text-sm sm:text-base">{ad.breed || 'N/A'}</div>
+                  <div className="text-[14px] text-gray-400 uppercase font-bold">Breed</div>
+                  <div className="font-semibold text-gray-800 text-[9px] sm:text-base">{ad.breed || 'N/A'}</div>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-xl text-center border border-gray-100">
                   <Calendar className="w-5 h-5 mx-auto mb-2 text-green-600" />
                   <div className="text-[10px] text-gray-400 uppercase font-bold">Age</div>
-                  <div className="font-semibold text-gray-800 text-sm sm:text-base">{ad.age || 'N/A'}</div>
+                  <div className="font-semibold text-gray-800 text-[9px] sm:text-base">{ad.age || 'N/A'}</div>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-xl text-center border border-gray-100">
                   <Weight className="w-5 h-5 mx-auto mb-2 text-green-600" />
                   <div className="text-[10px] text-gray-400 uppercase font-bold">Weight</div>
-                  <div className="font-semibold text-gray-800 text-sm sm:text-base">{ad.weight || 'N/A'}</div>
+                  <div className="font-semibold text-gray-800 text-[9px] sm:text-base">{ad.weight || 'N/A'}</div>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-xl text-center border border-gray-100">
                   <Activity className="w-5 h-5 mx-auto mb-2 text-green-600" />
                   <div className="text-[10px] text-gray-400 uppercase font-bold">Health</div>
-                  <div className="font-semibold text-gray-800 text-sm sm:text-base">{ad.healthCondition || 'Healthy'}</div>
+                  <div className="font-semibold text-gray-800 text-[9px] sm:text-base">{ad.healthCondition || 'Healthy'}</div>
                 </div>
               </div>
 
@@ -362,7 +361,6 @@ export default function AdDetail() {
               </div>
             </div>
 
-            {/* Safety Tips Card */}
             <div className="bg-amber-50 rounded-2xl p-5 border border-amber-100">
                 <h4 className="font-bold text-amber-900 flex items-center gap-2 mb-2">
                   <ShieldCheck className="w-4 h-4 text-amber-600" /> Safety First
@@ -376,7 +374,6 @@ export default function AdDetail() {
           </div>
         </div>
 
-        {/* Related Ads Section */}
         {relatedAds.length > 0 && (
           <div className="mt-16">
             <h2 className="text-2xl font-bold text-gray-900 mb-8">Related Listings</h2>
@@ -389,17 +386,16 @@ export default function AdDetail() {
         )}
       </div>
 
-      {/* --- WIDE SCREEN MODAL (Optimized for Mobile/Tablet) --- */}
+      {/* --- ZOOMABLE WIDE SCREEN MODAL --- */}
       <AnimatePresence>
         {isFullScreen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[999] bg-black flex items-center justify-center p-0 sm:p-4"
+            className="fixed inset-0 z-[999] bg-black flex items-center justify-center overflow-hidden touch-none"
             onClick={() => setIsFullScreen(false)}
           >
-            {/* Close Button - Larger touch area for mobile */}
             <button 
               className="absolute top-4 right-4 text-white p-3 bg-black/50 backdrop-blur-md rounded-full transition-colors z-[1001]"
               onClick={(e) => { e.stopPropagation(); setIsFullScreen(false); }}
@@ -430,17 +426,29 @@ export default function AdDetail() {
               </>
             )}
 
-            <motion.img
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              src={ad.images[currentImageIndex]}
-              alt={ad.title}
-              className="max-w-full max-h-screen object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
+            {/* Zoomable Image Container */}
+            <div className="w-full h-full flex items-center justify-center overflow-hidden">
+               <motion.img
+                key={currentImageIndex}
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                // Drag & Zoom Properties
+                drag
+                dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+                dragElastic={0.6}
+                whileTap={{ scale: 1.5, cursor: "grabbing" }} // Desktop click-to-zoom simulation
+                src={ad.images[currentImageIndex]}
+                alt={ad.title}
+                className="max-w-full max-h-full object-contain cursor-grab active:cursor-grabbing"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
             
-            {/* Image Indicator */}
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-[10px] text-white/50 uppercase tracking-tighter sm:hidden">
+              <ZoomIn className="w-3 h-3" /> Drag or Pinch to Zoom
+            </div>
+
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-black/50 backdrop-blur-md rounded-full text-white text-xs sm:text-sm font-medium border border-white/10">
               {currentImageIndex + 1} / {ad.images.length}
             </div>
