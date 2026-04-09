@@ -1,345 +1,347 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, limit, onSnapshot, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Ad } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { formatPrice } from '../lib/utils';
-import { getOrCreateChat } from '../lib/chat-service';
+import { formatPrice, cn } from '../lib/utils';
 import { 
-  MapPin, Phone, MessageCircle, MessageSquare, ShieldCheck, Share2, 
-  ChevronLeft, ChevronRight, Calendar, Weight, 
-  Activity, Info, Crown, Star, Hash, EyeOff 
+  MapPin, Phone, MessageCircle, ShieldCheck, Share2, 
+  ChevronLeft, ChevronRight, Flag, Calendar, Weight, 
+  Activity, Info, Crown, Star, Hash, EyeOff 
 } from 'lucide-react';
 import AdCard from '../components/AdCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
 export default function AdDetail() {
-  const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
-  const { t } = useLanguage();
-  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const [ad, setAd] = useState<any | null>(null);
+  const [relatedAds, setRelatedAds] = useState<Ad[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const { t } = useLanguage();
+  const navigate = useNavigate();
 
-  const [ad, setAd] = useState<any | null>(null);
-  const [relatedAds, setRelatedAds] = useState<Ad[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  useEffect(() => {
+    if (!id) return;
 
-  useEffect(() => {
-    if (!id) return;
+    const fetchAd = async () => {
+      setLoading(true);
+      try {
+        const adDoc = await getDoc(doc(db, 'ads', id));
+        if (adDoc.exists()) {
+          const adData = { id: adDoc.id, ...adDoc.data() } as Ad;
+          setAd(adData);
+          
+          await updateDoc(doc(db, 'ads', id), { viewCount: increment(1) });
 
-    const fetchAd = async () => {
-      setLoading(true);
-      try {
-        const adRef = doc(db, 'ads', id);
-        const adDoc = await getDoc(adRef);
-        
-        if (adDoc.exists()) {
-          const adData = { id: adDoc.id, ...adDoc.data() } as Ad;
-          setAd(adData);
-          
-          // Increment View Count
-          updateDoc(adRef, { viewCount: increment(1) });
+          const relatedQuery = query(
+            collection(db, 'ads'),
+            where('category', '==', adData.category),
+            where('status', '==', 'active'),
+            limit(4)
+          );
+          const unsubscribe = onSnapshot(relatedQuery, (snapshot) => {
+            setRelatedAds(snapshot.docs
+              .map(doc => ({ id: doc.id, ...doc.data() } as Ad))
+              .filter(a => a.id !== id)
+            );
+          });
+          return () => unsubscribe();
+        } else {
+          toast.error('Ad not found');
+          navigate('/');
+        }
+      } catch (error) {
+        console.error('Error fetching ad:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-          // Fetch Related Ads (Same category, excluding current ad)
-          const relatedQuery = query(
-            collection(db, 'ads'),
-            where('category', '==', adData.category),
-            where('status', '==', 'active'),
-            limit(10) // Fetch more to filter out current ad
-          );
-          
-          const unsubscribe = onSnapshot(relatedQuery, (snapshot) => {
-            const filtered = snapshot.docs
-              .map(doc => ({ id: doc.id, ...doc.data() } as Ad))
-              .filter(a => a.id !== id)
-              .slice(0, 4);
-            setRelatedAds(filtered);
-          });
-          
-          return () => unsubscribe();
-        } else {
-          toast.error('Listing not found');
-          navigate('/');
-        }
-      } catch (error) {
-        console.error('Error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchAd();
+  }, [id, navigate]);
 
-    fetchAd();
-  }, [id, navigate]);
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-12 animate-pulse">
+        <div className="h-96 bg-gray-200 rounded-2xl mb-8"></div>
+        <div className="h-10 bg-gray-200 w-3/4 rounded mb-4"></div>
+        <div className="h-64 bg-gray-200 rounded"></div>
+      </div>
+    );
+  }
 
-  // Permissions
-  const isOwner = user?.uid === ad?.sellerUid;
-  const canSeePrivateInfo = isOwner || user?.email === 'hellisop0@gmail.com';
-  const isFeatured = ad?.isFeatured || ad?.featured;
+  if (!ad) return null;
 
-  // Contact Logic
-  const cleanPhone = ad?.phoneNumber?.replace(/\D/g, '') || '';
-  const whatsappLink = ad?.whatsappLink || `https://wa.me/${cleanPhone}`;
+  const isGold = ad.isFeatured === true || ad.isFeatured === "true" || ad.is_featured === true || ad.featured === true;
 
-  const handleStartChat = async () => {
-    if (!user) {
-      toast.error("Please login to message the seller");
-      return;
-    }
-    if (isOwner) {
-      toast.error("You cannot message yourself");
-      return;
-    }
+  // Identity Check: Is the viewer the owner or the specific admin?
+  const canSeePrivateInfo = user?.uid === ad.sellerUid || user?.email === 'hellisop0@gmail.com';
 
-    try {
-      const chatId = await getOrCreateChat(user.uid, ad.sellerUid, ad.id, ad.title);
-      navigate('/messages', { state: { selectedChatId: chatId } });
-    } catch (error) {
-      toast.error("Could not start chat.");
-    }
-  };
+  const cleanPhone = ad.phoneNumber?.replace(/\D/g, '');
+  const finalWhatsappLink = ad.whatsappLink?.startsWith('http') 
+    ? ad.whatsappLink 
+    : `https://wa.me/${cleanPhone}`;
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({ title: ad.title, url: window.location.href });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success('Link copied!');
-    }
-  };
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: ad.title,
+        text: ad.description,
+        url: window.location.href,
+      });
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      toast.success('Link copied to clipboard');
+    }
+  };
 
-  if (loading) return (
-    <div className="max-w-7xl mx-auto px-4 py-12 animate-pulse space-y-8">
-      <div className="h-[500px] bg-gray-200 rounded-[3rem]" />
-      <div className="h-12 bg-gray-200 w-1/2 rounded-2xl" />
-      <div className="grid grid-cols-4 gap-4"><div className="h-24 bg-gray-200 rounded-3xl" /><div className="h-24 bg-gray-200 rounded-3xl" /><div className="h-24 bg-gray-200 rounded-3xl" /><div className="h-24 bg-gray-200 rounded-3xl" /></div>
-    </div>
-  );
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Unique ID copied!');
+  };
 
-  if (!ad) return null;
+  return (
+    <div className="min-h-screen bg-gray-50 pb-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Breadcrumbs */}
+        <nav className="flex mb-6 text-sm text-gray-500">
+          <Link to="/" className="hover:text-green-700">Home</Link>
+          <span className="mx-2">/</span>
+          <Link to={`/browse?category=${ad.category}`} className="hover:text-green-700 capitalize">
+            {t(ad.category.toLowerCase())}
+          </Link>
+          <span className="mx-2">/</span>
+          <span className="text-gray-900 font-medium truncate">{ad.title}</span>
+        </nav>
 
-  return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {/* Breadcrumbs */}
-        <nav className="flex items-center gap-2 mb-6 text-[10px] font-black uppercase tracking-widest text-gray-400">
-          <Link to="/" className="hover:text-green-700 transition-colors">Home</Link>
-          <ChevronRight size={10} />
-          <span className="text-gray-900">{ad.category}</span>
-        </nav>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+            {/* Image Gallery */}
+            <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 relative group">
+              <div className="aspect-video relative bg-black flex items-center justify-center">
+                {ad.images && ad.images.length > 0 ? (
+                  <>
+                    <AnimatePresence mode="wait">
+                      <motion.img
+                        key={currentImageIndex}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        src={ad.images[currentImageIndex]}
+                        alt={ad.title}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    </AnimatePresence>
+                    {ad.images.length > 1 && (
+                      <>
+                        <button 
+                          onClick={() => setCurrentImageIndex((p) => (p === 0 ? ad.images.length - 1 : p - 1))} 
+                          className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 rounded-full text-white hover:bg-white/40 transition-all"
+                        >
+                          <ChevronLeft className="w-6 h-6" />
+                        </button>
+                        <button 
+                          onClick={() => setCurrentImageIndex((p) => (p === ad.images.length - 1 ? 0 : p + 1))} 
+                          className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 rounded-full text-white hover:bg-white/40 transition-all"
+                        >
+                          <ChevronRight className="w-6 h-6" />
+                        </button>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-gray-500 flex flex-col items-center">
+                    <Info className="w-12 h-12 mb-2 opacity-20" /> No Photos Available
+                  </div>
+                )}
+              </div>
+            </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Main Media & Description */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm border border-gray-100 relative group">
-              <div className="aspect-[16/10] relative bg-neutral-900 flex items-center justify-center">
-                {ad.images?.length > 0 ? (
-                  <>
-                    <AnimatePresence mode="wait">
-                      <motion.img
-                        key={currentImageIndex}
-                        initial={{ opacity: 0, scale: 1.05 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0 }}
-                        src={ad.images[currentImageIndex]}
-                        className="w-full h-full object-contain"
-                      />
-                    </AnimatePresence>
-                    
-                    {ad.images.length > 1 && (
-                      <div className="absolute inset-x-6 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => setCurrentImageIndex(p => (p === 0 ? ad.images.length - 1 : p - 1))}
-                          className="p-4 bg-white/10 backdrop-blur-xl text-white rounded-2xl pointer-events-auto hover:bg-green-600 transition-all active:scale-90"
-                        >
-                          <ChevronLeft />
-                        </button>
-                        <button 
-                          onClick={() => setCurrentImageIndex(p => (p === ad.images.length - 1 ? 0 : p + 1))}
-                          className="p-4 bg-white/10 backdrop-blur-xl text-white rounded-2xl pointer-events-auto hover:bg-green-600 transition-all active:scale-90"
-                        >
-                          <ChevronRight />
-                        </button>
-                      </div>
-                    )}
-                    
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-                        {ad.images.map((_: any, i: number) => (
-                            <div key={i} className={`h-1.5 rounded-full transition-all ${i === currentImageIndex ? 'w-8 bg-green-500' : 'w-2 bg-white/30'}`} />
-                        ))}
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-white/10 flex flex-col items-center">
-                    <MessageSquare size={64} strokeWidth={1} />
-                    <span className="mt-4 font-black uppercase tracking-tighter">No Preview Available</span>
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Ad Info Section */}
+            <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200">
+              <div className="mb-6">
+                <div className="flex flex-wrap items-center gap-3 mb-3">
+                  <h1 className="text-3xl font-bold text-gray-900">{ad.title}</h1>
+                  {isGold && (
+                    <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-400 to-amber-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-md uppercase tracking-wider">
+                      <Crown className="w-3.5 h-3.5 fill-white" />
+                      Featured
+                    </div>
+                  )}
+                </div>
 
-            <div className="bg-white rounded-[2.5rem] p-8 md:p-10 shadow-sm border border-gray-100">
-              <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-8">
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <h1 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tighter leading-none">{ad.title}</h1>
-                    {isFeatured && (
-                      <span className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full text-[9px] font-black uppercase flex items-center gap-1.5 ring-4 ring-amber-50">
-                        <Crown size={12} fill="currentColor" /> Featured
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-5 text-sm text-gray-400 font-bold">
-                    <span className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-lg"><MapPin size={16} className="text-green-600" /> {ad.city}</span>
-                    <span className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-lg"><Calendar size={16} /> {new Date(ad.createdAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
-                <div className="md:text-right bg-green-50 p-4 md:p-6 rounded-[2rem] w-full md:w-auto">
-                  <div className="text-4xl font-black text-green-700 leading-none">{formatPrice(ad.price)}</div>
-                  <div className="text-[10px] font-black text-green-600/50 uppercase tracking-[0.2em] mt-2">Price Negotiable</div>
-                </div>
-              </div>
+                <div className="text-3xl font-black text-green-700 mb-4 flex items-center gap-2">
+                  {formatPrice(ad.price)}
+                  {isGold && <Star className="w-6 h-6 text-yellow-500 fill-yellow-500 animate-pulse" />}
+                </div>
 
-              {/* Stats Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-                {[
-                  { label: 'Breed', val: ad.breed, icon: Info },
-                  { label: 'Age', val: ad.age, icon: Calendar },
-                  { label: 'Weight', val: ad.weight, icon: Weight },
-                  { label: 'Health', val: ad.healthCondition, icon: Activity },
-                ].map((item, idx) => (
-                  <div key={idx} className="bg-gray-50/50 border border-gray-100 p-5 rounded-[2rem] hover:bg-white hover:shadow-xl hover:shadow-gray-100 transition-all group">
-                    <item.icon className="w-6 h-6 mb-3 text-green-600 group-hover:scale-110 transition-transform" />
-                    <p className="text-[9px] uppercase font-black text-gray-400 mb-1 tracking-widest">{item.label}</p>
-                    <p className="font-bold text-gray-800">{item.val || 'N/A'}</p>
-                  </div>
-                ))}
-              </div>
+                <div className="flex flex-wrap items-center gap-4 text-gray-500 text-sm">
+                  {ad.isUrgent && (
+                    <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-bold ring-1 ring-red-200">
+                      URGENT SALE
+                    </span>
+                  )}
+                  <span className="flex items-center"><MapPin className="w-4 h-4 mr-1 text-green-600" /> {ad.city}</span>
+                  <span className="flex items-center"><Calendar className="w-4 h-4 mr-1 text-green-600" /> {new Date(ad.createdAt).toLocaleDateString()}</span>
+                </div>
+              </div>
 
-              <div className="relative pt-8 border-t border-gray-100">
-                <h3 className="text-xl font-black text-gray-900 mb-5 flex items-center gap-3">
-                    <div className="w-2 h-6 bg-green-600 rounded-full" />
-                    Seller Description
-                </h3>
-                <p className="text-gray-600 leading-relaxed text-lg whitespace-pre-wrap">{ad.description}</p>
-              </div>
-            </div>
-          </div>
+              {/* Attributes Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                <div className="bg-gray-50 p-4 rounded-xl text-center border border-gray-100">
+                  <Info className="w-5 h-5 mx-auto mb-2 text-green-600" />
+                  <div className="text-[10px] text-gray-400 uppercase font-bold">Breed</div>
+                  <div className="font-semibold text-gray-800">{ad.breed || 'N/A'}</div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-xl text-center border border-gray-100">
+                  <Calendar className="w-5 h-5 mx-auto mb-2 text-green-600" />
+                  <div className="text-[10px] text-gray-400 uppercase font-bold">Age</div>
+                  <div className="font-semibold text-gray-800">{ad.age || 'N/A'}</div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-xl text-center border border-gray-100">
+                  <Weight className="w-5 h-5 mx-auto mb-2 text-green-600" />
+                  <div className="text-[10px] text-gray-400 uppercase font-bold">Weight</div>
+                  <div className="font-semibold text-gray-800">{ad.weight || 'N/A'}</div>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-xl text-center border border-gray-100">
+                  <Activity className="w-5 h-5 mx-auto mb-2 text-green-600" />
+                  <div className="text-[10px] text-gray-400 uppercase font-bold">Health</div>
+                  <div className="font-semibold text-gray-800">{ad.healthCondition || 'Healthy'}</div>
+                </div>
+              </div>
 
-          {/* Right Sidebar: Actions */}
-          <div className="space-y-6">
-            
-            {/* Management Panel */}
-            {canSeePrivateInfo && (
-              <div className="bg-neutral-900 rounded-[2.5rem] p-8 text-white shadow-2xl shadow-gray-200">
-                <div className="flex items-center gap-3 text-xs font-black uppercase tracking-widest mb-6 text-green-400">
-                  <ShieldCheck size={18} /> Owner Controls
-                </div>
-                <div 
-                    className="bg-white/5 border border-white/10 rounded-2xl p-5 flex justify-between items-center group cursor-copy active:bg-white/10 transition-colors"
-                    onClick={() => { navigator.clipboard.writeText(ad.id); toast.success("ID Copied"); }}
-                >
-                  <div>
-                    <p className="text-[9px] font-black uppercase text-neutral-500 mb-1">Listing Reference</p>
-                    <p className="font-mono font-bold text-lg tracking-tighter uppercase">{ad.id.slice(0, 12)}...</p>
-                  </div>
-                  <Hash size={20} className="text-neutral-600 group-hover:text-green-500 transition-colors" />
-                </div>
-                {ad.hidePhoneNumber && (
-                  <div className="mt-5 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-3 text-[11px] text-amber-200 leading-tight font-medium">
-                    <EyeOff size={18} className="flex-shrink-0" /> 
-                    <span>Privacy Mode: Your phone number is only visible to you. Buyers must use internal chat.</span>
-                  </div>
-                )}
-              </div>
-            )}
+              <div className="prose max-w-none">
+                <h3 className="text-xl font-bold mb-4 text-gray-900">Description</h3>
+                <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">{ad.description}</p>
+              </div>
+            </div>
+          </div>
 
-            {/* Seller Contact Card */}
-            <div className="bg-white rounded-[3rem] p-8 shadow-sm border border-gray-100 sticky top-24">
-              <div className="flex items-center gap-5 mb-10">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-green-800 text-white flex items-center justify-center font-black text-2xl shadow-xl ring-4 ring-green-50">
-                  {ad.sellerName?.charAt(0) || 'M'}
-                </div>
-                <div>
-                  <h3 className="font-black text-gray-900 text-xl leading-none mb-2">{ad.sellerName}</h3>
-                  <div className="flex items-center gap-1.5 text-green-600">
-                    <ShieldCheck size={14} fill="currentColor" className="opacity-20" />
-                    <p className="text-[10px] font-black uppercase tracking-widest">Verified Trader</p>
-                  </div>
-                </div>
-              </div>
+          {/* Sidebar */}
+          <div className="space-y-6">
+            
+            {/* MANAGEMENT DASHBOARD: Only visible to Owner/Admin */}
+            {canSeePrivateInfo && (
+              <div className="bg-blue-600 border-2 border-blue-400 rounded-2xl p-5 shadow-lg text-white">
+                <div className="flex items-center gap-2 text-blue-100 font-black text-xs uppercase tracking-widest mb-3">
+                  <ShieldCheck className="w-4 h-4" />
+                  Management Dashboard
+                </div>
+                <div 
+                  onClick={() => copyToClipboard(ad.id)}
+                  className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/20 flex justify-between items-center cursor-pointer hover:bg-white/20 transition-all shadow-inner"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-bold text-blue-200 uppercase">Unique Ad ID</span>
+                    <span className="text-sm font-mono font-black tracking-wider uppercase">
+                      {ad.id}
+                    </span>
+                  </div>
+                  <Hash className="w-4 h-4 text-blue-200" />
+                </div>
+                {ad.hidePhoneNumber && (
+                  <div className="mt-3 flex items-center gap-2 text-[10px] bg-red-500/20 p-2 rounded-lg border border-red-400/30">
+                    <EyeOff className="w-3 h-3" />
+                    <span>Your phone number is currently <strong>Hidden</strong> from buyers.</span>
+                  </div>
+                )}
+                <p className="text-[9px] text-blue-100 mt-3 text-center font-medium italic opacity-80">
+                  Visible only to you and the Admin
+                </p>
+              </div>
+            )}
 
-              <div className="space-y-4">
-                {!isOwner && (
-                  <button 
-                    onClick={handleStartChat}
-                    className="w-full bg-blue-600 text-white py-5 rounded-3xl font-black flex items-center justify-center gap-3 hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 active:scale-95 group"
-                  >
-                    <MessageSquare size={22} className="group-hover:rotate-12 transition-transform" /> Chat with Seller
-                  </button>
-                )}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 sticky top-24">
+              <h3 className="font-bold text-gray-900 mb-6 border-b pb-2">Seller Details</h3>
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center font-bold text-green-700 text-xl shadow-inner border border-green-200">
+                  {ad.sellerName?.charAt(0) || 'U'}
+                </div>
+                <div>
+                  <div className="font-bold text-gray-900 flex items-center gap-1">
+                    {ad.sellerName} 
+                    <ShieldCheck className="w-4 h-4 text-blue-500" />
+                  </div>
+                  <div className="text-xs text-gray-500 italic">Verified Mandi Seller</div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                {(!ad.hidePhoneNumber || canSeePrivateInfo) ? (
+                  <>
+                    <a 
+                      href={finalWhatsappLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="w-full bg-green-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-green-700 transition-all shadow-lg shadow-green-100 active:scale-95"
+                    >
+                      <MessageCircle className="w-5 h-5" /> 
+                      WhatsApp Seller
+                    </a>
+                    
+                    <a 
+                      href={`tel:${ad.phoneNumber}`} 
+                      className="w-full border-2 border-green-600 text-green-600 py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-green-50 transition-all active:scale-95"
+                    >
+                      <Phone className="w-5 h-5" /> 
+                      Call Now
+                    </a>
+                    {ad.hidePhoneNumber && canSeePrivateInfo && (
+                      <p className="text-[10px] text-center text-orange-600 font-black uppercase tracking-tighter">
+                        Visible to you because you are the owner/admin
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 text-center">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <EyeOff className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <p className="text-sm font-bold text-gray-800">Contact Hidden</p>
+                    <p className="text-[11px] text-gray-500 leading-tight">The seller has chosen to keep their phone number private.</p>
+                  </div>
+                )}
 
-                {(!ad.hidePhoneNumber || canSeePrivateInfo) ? (
-                  <>
-                    <a 
-                      href={whatsappLink} target="_blank" rel="noreferrer"
-                      className="w-full bg-emerald-500 text-white py-5 rounded-3xl font-black flex items-center justify-center gap-3 hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-100 active:scale-95"
-                    >
-                      <MessageCircle size={22} /> WhatsApp
-                    </a>
-                    <a 
-                      href={`tel:${ad.phoneNumber}`}
-                      className="w-full bg-gray-900 text-white py-5 rounded-3xl font-black flex items-center justify-center gap-3 hover:bg-black transition-all active:scale-95"
-                    >
-                      <Phone size={22} /> {ad.phoneNumber}
-                    </a>
-                  </>
-                ) : (
-                  <div className="p-8 bg-neutral-50 rounded-[2.5rem] text-center border-2 border-dashed border-neutral-200">
-                    <EyeOff size={28} className="mx-auto mb-3 text-neutral-300" />
-                    <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest leading-relaxed px-4">Number Hidden by Seller</p>
-                  </div>
-                )}
+                <button 
+                  onClick={handleShare}
+                  className="w-full mt-4 flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-green-700 transition-colors"
+                >
+                  <Share2 className="w-4 h-4" /> Share this Ad
+                </button>
+              </div>
+            </div>
 
-                <button onClick={handleShare} className="w-full pt-6 text-[10px] font-black text-gray-300 hover:text-green-600 transition-colors flex items-center justify-center gap-2 uppercase tracking-[0.2em]">
-                  <Share2 size={16} /> Share This Ad
-                </button>
-              </div>
-            </div>
+            {/* Safety Tips Card */}
+            <div className="bg-amber-50 rounded-2xl p-5 border border-amber-100">
+               <h4 className="font-bold text-amber-900 flex items-center gap-2 mb-2">
+                 <ShieldCheck className="w-4 h-4 text-amber-600" /> Safety First
+               </h4>
+               <ul className="text-xs text-amber-800 space-y-2 list-disc pl-4">
+                 <li>Never pay advance via Easypaisa or JazzCash.</li>
+                 <li>Always visit the animal in person before buying.</li>
+                 <li>Meet in a public place or well-known Mandi.</li>
+               </ul>
+            </div>
+          </div>
+        </div>
 
-            {/* Safety Tips */}
-            <div className="bg-amber-50/50 border border-amber-100 rounded-[2.5rem] p-8">
-              <div className="flex items-center gap-2 text-amber-700 font-black text-[10px] uppercase tracking-widest mb-5">
-                <ShieldCheck size={16} /> Safety Guidelines
-              </div>
-              <ul className="text-[11px] text-amber-800/70 space-y-3 font-bold leading-relaxed">
-                <li className="flex gap-2"><span>•</span> Inspect animal health personally.</li>
-                <li className="flex gap-2"><span>•</span> Never send advance payments.</li>
-                <li className="flex gap-2"><span>•</span> Meet in public marketplaces.</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Similar Listings */}
-        {relatedAds.length > 0 && (
-          <div className="mt-32">
-            <div className="flex items-end justify-between mb-12 px-4">
-                <div>
-                    <p className="text-green-600 font-black text-[10px] uppercase tracking-[0.3em] mb-2">Explore More</p>
-                    <h2 className="text-4xl font-black text-gray-900 tracking-tighter leading-none">Similar Listings</h2>
-                </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {relatedAds.map(item => <AdCard key={item.id} ad={item} />)}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+        {/* Related Ads Section */}
+        {relatedAds.length > 0 && (
+          <div className="mt-16">
+            <h2 className="text-2xl font-bold text-gray-900 mb-8">Related Listings</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {relatedAds.map((relatedAd) => (
+                <AdCard key={relatedAd.id} ad={relatedAd} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
