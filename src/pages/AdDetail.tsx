@@ -11,7 +11,7 @@ import { getOrCreateChat } from '../lib/chat-service';
 import { 
   MapPin, Phone, MessageCircle, MessageSquare, ShieldCheck, Share2, 
   ChevronLeft, ChevronRight, Flag, Calendar, Weight, 
-  Activity, Info, Crown, Star, Hash, EyeOff 
+  Activity, Info, Crown, Star, Hash, EyeOff, X, Maximize2 
 } from 'lucide-react';
 import AdCard from '../components/AdCard';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,6 +24,7 @@ export default function AdDetail() {
   const [relatedAds, setRelatedAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const { t } = useLanguage();
   const navigate = useNavigate();
 
@@ -66,6 +67,15 @@ export default function AdDetail() {
 
     fetchAd();
   }, [id, navigate]);
+
+  // Lock scroll when fullscreen is active
+  useEffect(() => {
+    if (isFullScreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [isFullScreen]);
 
   const handleStartChat = async () => {
     if (!user) {
@@ -145,7 +155,10 @@ export default function AdDetail() {
           <div className="lg:col-span-2 space-y-8">
             {/* Image Gallery */}
             <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 relative group">
-              <div className="aspect-video relative bg-black flex items-center justify-center">
+              <div 
+                className="aspect-video relative bg-black flex items-center justify-center cursor-zoom-in"
+                onClick={() => ad.images && ad.images.length > 0 && setIsFullScreen(true)}
+              >
                 {ad.images && ad.images.length > 0 ? (
                   <>
                     <AnimatePresence mode="wait">
@@ -159,17 +172,29 @@ export default function AdDetail() {
                         className="max-h-full max-w-full object-contain"
                       />
                     </AnimatePresence>
+                    
+                    {/* Expand Hint */}
+                    <div className="absolute top-4 right-4 p-2 bg-black/40 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Maximize2 className="w-5 h-5" />
+                    </div>
+
                     {ad.images.length > 1 && (
                       <>
                         <button 
-                          onClick={() => setCurrentImageIndex((p) => (p === 0 ? ad.images.length - 1 : p - 1))} 
-                          className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 rounded-full text-white hover:bg-white/40 transition-all"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentImageIndex((p) => (p === 0 ? ad.images.length - 1 : p - 1));
+                          }} 
+                          className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 rounded-full text-white hover:bg-white/40 transition-all z-10"
                         >
                           <ChevronLeft className="w-6 h-6" />
                         </button>
                         <button 
-                          onClick={() => setCurrentImageIndex((p) => (p === ad.images.length - 1 ? 0 : p + 1))} 
-                          className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 rounded-full text-white hover:bg-white/40 transition-all"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentImageIndex((p) => (p === ad.images.length - 1 ? 0 : p + 1));
+                          }} 
+                          className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 rounded-full text-white hover:bg-white/40 transition-all z-10"
                         >
                           <ChevronRight className="w-6 h-6" />
                         </button>
@@ -292,7 +317,7 @@ export default function AdDetail() {
               </div>
               
               <div className="space-y-3">
-                {/* Internal Chat Button Added Here */}
+                {/* Internal Chat Button */}
                 {!isOwner && (
                   <button 
                     onClick={handleStartChat}
@@ -344,14 +369,14 @@ export default function AdDetail() {
 
             {/* Safety Tips Card */}
             <div className="bg-amber-50 rounded-2xl p-5 border border-amber-100">
-               <h4 className="font-bold text-amber-900 flex items-center gap-2 mb-2">
-                 <ShieldCheck className="w-4 h-4 text-amber-600" /> Safety First
-               </h4>
-               <ul className="text-xs text-amber-800 space-y-2 list-disc pl-4">
-                 <li>Never pay advance via Easypaisa or JazzCash.</li>
-                 <li>Always visit the animal in person before buying.</li>
-                 <li>Meet in a public place or well-known Mandi.</li>
-               </ul>
+                <h4 className="font-bold text-amber-900 flex items-center gap-2 mb-2">
+                  <ShieldCheck className="w-4 h-4 text-amber-600" /> Safety First
+                </h4>
+                <ul className="text-xs text-amber-800 space-y-2 list-disc pl-4">
+                  <li>Never pay advance via Easypaisa or JazzCash.</li>
+                  <li>Always visit the animal in person before buying.</li>
+                  <li>Meet in a public place or well-known Mandi.</li>
+                </ul>
             </div>
           </div>
         </div>
@@ -368,6 +393,63 @@ export default function AdDetail() {
           </div>
         )}
       </div>
+
+      {/* --- WIDE SCREEN MODAL --- */}
+      <AnimatePresence>
+        {isFullScreen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[999] bg-black/95 flex items-center justify-center p-4"
+            onClick={() => setIsFullScreen(false)}
+          >
+            <button 
+              className="absolute top-6 right-6 text-white p-2 hover:bg-white/10 rounded-full transition-colors z-[1000]"
+              onClick={() => setIsFullScreen(false)}
+            >
+              <X className="w-8 h-8" />
+            </button>
+
+            {ad.images.length > 1 && (
+              <>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentImageIndex((p) => (p === 0 ? ad.images.length - 1 : p - 1));
+                  }} 
+                  className="absolute left-4 md:left-10 top-1/2 -translate-y-1/2 p-3 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all z-[1000]"
+                >
+                  <ChevronLeft className="w-8 h-8" />
+                </button>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentImageIndex((p) => (p === ad.images.length - 1 ? 0 : p + 1));
+                  }} 
+                  className="absolute right-4 md:right-10 top-1/2 -translate-y-1/2 p-3 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all z-[1000]"
+                >
+                  <ChevronRight className="w-8 h-8" />
+                </button>
+              </>
+            )}
+
+            <motion.img
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              src={ad.images[currentImageIndex]}
+              alt={ad.title}
+              className="max-w-full max-h-full object-contain shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+            
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/70 text-sm font-medium">
+              {currentImageIndex + 1} / {ad.images.length}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
