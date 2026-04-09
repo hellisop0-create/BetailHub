@@ -63,7 +63,10 @@ export default function Messages() {
       
       setOpenSidebarMenu(null);
       setShowMenu(false);
-      if (activeChat?.id === chatToLeave.id) setActiveChat(null);
+      
+      // If we are currently looking at the chat we just left, we don't necessarily 
+      // have to null it, the UI will just show the "Cooldown" overlay.
+      // But for a clean experience, let's keep it active so they see the cooldown.
       
       toast.success("Left chat. 12h cooldown active.");
     } catch (error) {
@@ -132,8 +135,13 @@ export default function Messages() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!activeChat || !user) return;
+    
     const { isRestricted } = getCooldownStatus(activeChat);
-    if (!inputText.trim() || !activeChat || !user || activeChat.status === 'blocked' || isRestricted) return;
+    if (!inputText.trim() || activeChat.status === 'blocked' || isRestricted) {
+      if (isRestricted) toast.error("You are in cooldown period.");
+      return;
+    }
 
     const text = inputText; 
     setInputText('');
@@ -169,7 +177,8 @@ export default function Messages() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto pt-2">
+        {/* Added overflow-x-visible so dropdown doesn't get cut off */}
+        <div className="flex-1 overflow-y-auto overflow-x-visible pt-2">
           {filteredChats.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 text-gray-400 px-6 text-center">
               <MessageCircle size={32} className="mb-3 opacity-30" />
@@ -183,12 +192,35 @@ export default function Messages() {
                   <h3 className={`font-bold truncate text-sm ${activeChat?.id === chat.id ? 'text-green-900' : 'text-gray-900'}`}>{chat.adTitle || "Unknown Ad"}</h3>
                   <p className={`text-xs truncate ${activeChat?.id === chat.id ? 'text-green-700/80 font-medium' : 'text-gray-500'}`}>{chat.lastMessage || "No messages yet"}</p>
                 </div>
+                
                 <div className="relative self-center">
-                  <button onClick={(e) => { e.stopPropagation(); setOpenSidebarMenu(openSidebarMenu === chat.id ? null : chat.id); }} className="p-2 hover:bg-white rounded-full md:opacity-0 group-hover:opacity-100 transition-all text-gray-400 hover:text-gray-600 shadow-sm"><MoreVertical size={16} /></button>
+                  <button 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      setOpenSidebarMenu(openSidebarMenu === chat.id ? null : chat.id); 
+                    }} 
+                    className="p-2 hover:bg-white rounded-full md:opacity-0 group-hover:opacity-100 transition-all text-gray-400 hover:text-gray-600 shadow-sm"
+                  >
+                    <MoreVertical size={16} />
+                  </button>
+                  
                   {openSidebarMenu === chat.id && (
-                    <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-100 rounded-xl shadow-xl py-1.5 z-50 overflow-hidden">
-                      <button onClick={(e) => { e.stopPropagation(); handleLeaveChatAction(chat); }} className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors border-b border-gray-50"><LogOut size={14} /> Leave Chat</button>
-                      <button onClick={(e) => handleDeleteChat(e, chat.id)} className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"><Trash2 size={14} /> Delete Chat</button>
+                    <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-100 rounded-xl shadow-2xl py-1.5 z-[100] overflow-hidden">
+                      <button 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          handleLeaveChatAction(chat); 
+                        }} 
+                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors border-b border-gray-50"
+                      >
+                        <LogOut size={14} /> Leave Chat
+                      </button>
+                      <button 
+                        onClick={(e) => handleDeleteChat(e, chat.id)} 
+                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                      >
+                        <Trash2 size={14} /> Delete Chat
+                      </button>
                     </div>
                   )}
                 </div>
