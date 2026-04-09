@@ -1,9 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, where, orderBy, onSnapshot, limit, writeBatch, getDocs } from 'firebase/firestore';
+import { 
+  collection, query, where, orderBy, onSnapshot, 
+  limit, doc, writeBatch, getDocs, getDoc 
+} from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { sendMessage } from '../lib/chat-service';
-import { Send, ChevronLeft, MessageCircle, Search, MoreVertical, Check, CheckCheck, ExternalLink } from 'lucide-react';
+import { 
+  Send, ChevronLeft, MessageCircle, Search, 
+  MoreVertical, Check, CheckCheck, ExternalLink, Tag
+} from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 
 export default function Messages() {
@@ -11,6 +17,7 @@ export default function Messages() {
   const location = useLocation();
   const [chats, setChats] = useState<any[]>([]);
   const [activeChat, setActiveChat] = useState<any>(null);
+  const [activeAd, setActiveAd] = useState<any>(null); // State for the Ad Preview
   const [messages, setMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -18,10 +25,15 @@ export default function Messages() {
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   useEffect(() => { scrollToBottom(); }, [messages]);
 
+  // Mark as Seen logic
   useEffect(() => {
     if (!activeChat || !user) return;
     const markAsRead = async () => {
-      const q = query(collection(db, 'chats', activeChat.id, 'messages'), where('senderId', '!=', user.uid), where('status', '!=', 'seen'));
+      const q = query(
+        collection(db, 'chats', activeChat.id, 'messages'),
+        where('senderId', '!=', user.uid),
+        where('status', '!=', 'seen')
+      );
       const snapshot = await getDocs(q);
       if (snapshot.empty) return;
       const batch = writeBatch(db);
@@ -31,6 +43,7 @@ export default function Messages() {
     markAsRead();
   }, [activeChat, messages, user]);
 
+  // Fetch Chat List
   useEffect(() => {
     if (!user) return;
     const q = query(collection(db, 'chats'), where('participants', 'array-contains', user.uid), orderBy('updatedAt', 'desc'));
@@ -45,6 +58,22 @@ export default function Messages() {
     });
   }, [user, location.state]);
 
+  // Fetch Ad Details for the Preview Bar
+  useEffect(() => {
+    if (!activeChat?.adId) {
+      setActiveAd(null);
+      return;
+    }
+    const fetchAdPreview = async () => {
+      const adDoc = await getDoc(doc(db, 'ads', activeChat.adId));
+      if (adDoc.exists()) {
+        setActiveAd({ id: adDoc.id, ...adDoc.data() });
+      }
+    };
+    fetchAdPreview();
+  }, [activeChat]);
+
+  // Fetch Messages
   useEffect(() => {
     if (!activeChat) return;
     const q = query(collection(db, 'chats', activeChat.id, 'messages'), orderBy('timestamp', 'asc'), limit(50));
@@ -64,6 +93,7 @@ export default function Messages() {
 
   return (
     <div className="fixed inset-0 flex bg-white z-40">
+      {/* Sidebar */}
       <div className={`w-full md:w-[380px] border-r flex flex-col bg-white ${activeChat ? 'hidden md:flex' : 'flex'}`}>
         <div className="p-6 border-b"><h1 className="text-2xl font-black mb-6">Messages</h1></div>
         <div className="flex-1 overflow-y-auto">
@@ -76,23 +106,42 @@ export default function Messages() {
         </div>
       </div>
 
+      {/* Main Chat Area */}
       <div className={`flex-1 flex flex-col bg-gray-50 ${!activeChat ? 'hidden md:flex items-center justify-center' : 'flex'}`}>
         {activeChat ? (
           <>
-            <div className="bg-white px-6 py-3 border-b flex items-center justify-between shadow-sm z-10">
+            {/* 1. TOP HEADER (Seller Name) */}
+            <div className="bg-white px-6 py-3 border-b flex items-center justify-between shadow-sm z-20">
               <div className="flex items-center gap-3">
                 <button onClick={() => setActiveChat(null)} className="md:hidden p-2"><ChevronLeft /></button>
                 <div className="w-10 h-10 rounded-xl bg-green-700 text-white flex items-center justify-center font-bold">{(activeChat.sellerName || "S").charAt(0)}</div>
-                <div className="min-w-0">
-                  <h3 className="font-black text-gray-900 leading-none">{activeChat.sellerName || "Seller"}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[11px] font-bold text-gray-400 truncate max-w-[120px]">{activeChat.adTitle}</span>
-                    <Link to={`/ad/${activeChat.adId}`} className="text-[9px] bg-green-600 text-white px-2 py-0.5 rounded font-black flex items-center gap-1">VIEW AD <ExternalLink size={10} /></Link>
-                  </div>
-                </div>
+                <h3 className="font-black text-gray-900 leading-none">{activeChat.sellerName || "Seller"}</h3>
               </div>
+              <MoreVertical className="w-5 h-5 text-gray-400" />
             </div>
 
+            {/* 2. AD PREVIEW BAR (Sticky below header) */}
+            {activeAd && (
+              <div className="bg-white px-6 py-2 border-b flex items-center justify-between shadow-sm z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden border">
+                    <img src={activeAd.images?.[0]} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-black text-gray-900 truncate leading-tight uppercase tracking-tighter">{activeAd.title}</p>
+                    <p className="text-sm font-black text-green-700">Rs. {activeAd.price?.toLocaleString()}</p>
+                  </div>
+                </div>
+                <Link 
+                  to={`/ad/${activeAd.id}`} 
+                  className="bg-gray-100 hover:bg-green-600 hover:text-white transition-colors text-gray-600 px-4 py-2 rounded-xl text-[10px] font-black flex items-center gap-2"
+                >
+                  VIEW AD <ExternalLink size={12} />
+                </Link>
+              </div>
+            )}
+
+            {/* Message List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex ${msg.senderId === user.uid ? 'justify-end' : 'justify-start'}`}>
