@@ -6,7 +6,8 @@ import {
   onSnapshot, 
   deleteDoc, 
   doc, 
-  documentId 
+  documentId,
+  updateDoc 
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,7 +24,8 @@ import {
   Clock, 
   Edit3, 
   Eye,
-  Settings
+  Settings,
+  Tag
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
@@ -93,6 +95,18 @@ export default function Profile() {
       toast.success('Ad deleted successfully');
     } catch (error: any) {
       toast.error('Failed to delete ad');
+    }
+  };
+
+  const handleToggleSold = async (adId: string, currentStatus: string) => {
+    try {
+      const newStatus = currentStatus === 'sold' ? 'active' : 'sold';
+      await updateDoc(doc(db, 'ads', adId), {
+        status: newStatus
+      });
+      toast.success(newStatus === 'sold' ? 'Marked as Sold' : 'Marked as Active');
+    } catch (error) {
+      toast.error('Failed to update status');
     }
   };
 
@@ -167,8 +181,17 @@ export default function Profile() {
                         
                         {/* Header: Image and Info */}
                         <div className="flex space-x-4">
-                          <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl overflow-hidden flex-shrink-0 bg-gray-50 border border-gray-100">
-                            <img src={ad.images?.[0] || 'https://via.placeholder.com/300'} alt="" className="w-full h-full object-cover" />
+                          <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl overflow-hidden flex-shrink-0 bg-gray-50 border border-gray-100 relative">
+                            <img 
+                              src={ad.images?.[0] || 'https://via.placeholder.com/300'} 
+                              alt="" 
+                              className={cn("w-full h-full object-cover", ad.status === 'sold' && "opacity-50 grayscale")} 
+                            />
+                            {ad.status === 'sold' && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="bg-black/60 text-white text-[10px] px-2 py-1 rounded font-bold uppercase tracking-widest">Sold</span>
+                              </div>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -176,6 +199,11 @@ export default function Profile() {
                               {ad.status === 'pending' && (
                                 <span className="bg-amber-50 text-amber-600 text-[10px] px-2 py-1 rounded-lg flex items-center font-bold uppercase tracking-wider border border-amber-100">
                                   <Clock className="w-3 h-3 mr-1" /> Pending
+                                </span>
+                              )}
+                              {ad.status === 'sold' && (
+                                <span className="bg-gray-100 text-gray-600 text-[10px] px-2 py-1 rounded-lg flex items-center font-bold uppercase tracking-wider border border-gray-200">
+                                  <Tag className="w-3 h-3 mr-1" /> Sold
                                 </span>
                               )}
                             </div>
@@ -191,7 +219,7 @@ export default function Profile() {
                           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-3 flex items-center">
                             <Settings className="w-3 h-3 mr-1" /> Manage Your Ad
                           </p>
-                          <div className="grid grid-cols-3 gap-2">
+                          <div className="grid grid-cols-2 gap-2">
                             <button 
                               onClick={() => navigate(`/ad/${ad.id}`)}
                               className="flex items-center justify-center space-x-1 py-2.5 px-2 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors text-sm font-bold border border-gray-200"
@@ -206,6 +234,19 @@ export default function Profile() {
                             >
                               <Edit3 className="w-4 h-4" />
                               <span>Edit</span>
+                            </button>
+
+                            <button 
+                              onClick={() => handleToggleSold(ad.id, ad.status)}
+                              className={cn(
+                                "flex items-center justify-center space-x-1 py-2.5 px-2 rounded-xl transition-colors text-sm font-bold border",
+                                ad.status === 'sold' 
+                                  ? "bg-green-600 text-white border-green-700 hover:bg-green-700" 
+                                  : "bg-white text-green-700 border-green-200 hover:bg-green-50"
+                              )}
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              <span>{ad.status === 'sold' ? 'Mark Active' : 'Mark Sold'}</span>
                             </button>
 
                             <button 
