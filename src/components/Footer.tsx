@@ -44,6 +44,11 @@ export default function Footer() {
               <li><Link to="/post-ad" className="hover:text-white transition-colors">Post an Ad</Link></li>
               <li><Link to="/browse?featured=true" className="hover:text-white transition-colors">Featured Ads</Link></li>
               <li><Link to="/profile" className="hover:text-white transition-colors">My Account</Link></li>
+               <li>
+                <Link to="./pages/ServicesPage" className="hover:text-white transition-colors">
+                  Our Services
+                </Link>
+                </li>
             </ul>
           </div>
 
@@ -57,11 +62,6 @@ export default function Footer() {
               <li><Link to="/browse?category=Sheep" className="hover:text-white transition-colors">Sheep</Link></li>
               <li><Link to="/browse?category=Camel" className="hover:text-white transition-colors">Camel</Link></li>
               <li><Link to="/browse?category=Others" className="hover:text-white transition-colors">Others</Link></li>
-              <li>
-                <Link to="pages/ServicesPage" className="hover:text-white transition-colors">
-                  Our Services
-                </Link>
-              </li>
             </ul>
           </div>
 
