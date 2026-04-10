@@ -318,7 +318,11 @@ export default function AdDetail() {
                 <div className="overflow-hidden">
                   <div className="font-bold text-gray-900 flex items-center gap-1.5 truncate">
                     {ad.sellerName} 
-                    {isVerifiedSeller && <BadgeCheck className="w-5 h-5 text-blue-500 fill-blue-500 shrink-0" strokeWidth={2.5} />}
+                    {isVerifiedSeller && (
+                      <span className="bg-blue-500 rounded-full p-0.5 flex items-center justify-center shadow-sm">
+                        <BadgeCheck className="w-4 h-4 text-white" />
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-gray-500 italic">Verified Mandi Seller</div>
                 </div>
