@@ -324,7 +324,6 @@ export default function AdDetail() {
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-gray-500 italic">Verified Mandi Seller</div>
                 </div>
               </div>
               
