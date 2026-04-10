@@ -112,6 +112,8 @@ export default function AdDetail() {
   if (!ad) return null;
 
   const isGold = ad.isFeatured === true || ad.isFeatured === "true" || ad.is_featured === true || ad.featured === true;
+  // Check for various possible verification field names
+  const isVerifiedSeller = ad.isVerified === true || ad.sellerVerified === true || ad.verified === true;
   const isOwner = user?.uid === ad.sellerUid;
   const canSeePrivateInfo = isOwner || user?.email === 'hellisop0@gmail.com';
 
@@ -307,7 +309,7 @@ export default function AdDetail() {
                 <div className="overflow-hidden">
                   <div className="font-bold text-gray-900 flex items-center gap-1 truncate">
                     {ad.sellerName} 
-                    {ad.isVerified && <BadgeCheck className="w-4 h-4 text-blue-500 shrink-0 fill-blue-50" />}
+                    {isVerifiedSeller && <BadgeCheck className="w-4 h-4 text-blue-500 shrink-0 fill-blue-500 text-white" />}
                   </div>
                   <div className="text-xs text-gray-500 italic">Verified Mandi Seller</div>
                 </div>
