@@ -240,7 +240,7 @@ export default function PostAd() {
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">Category</label>
                 <select {...register('category')} className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none">
-                  {['Cow', 'Buffalo', 'Goat', 'Sheep', 'Camel', 'Others'].map(cat => (
+                  {['Cattle', 'Buffalo', 'Goat', 'Sheep', 'Camel', 'Others'].map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
