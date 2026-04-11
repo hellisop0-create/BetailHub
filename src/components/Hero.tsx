@@ -35,12 +35,15 @@ const LOCATION_DATA = {
 const SuggestionList = ({ items, onSelect, visible }) => {
   if (!visible || items.length === 0) return null;
   return (
-    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto">
+    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-[999] max-h-48 overflow-y-auto py-1">
       {items.map((item) => (
         <div
           key={item}
-          onClick={() => onSelect(item)}
-          className="px-4 py-3 hover:bg-green-50 cursor-pointer text-left text-sm text-gray-700 font-medium flex justify-between items-center group"
+          onMouseDown={(e) => {
+            e.preventDefault(); // Prevents blur from closing list before selection
+            onSelect(item);
+          }}
+          className="px-4 py-2 hover:bg-green-50 cursor-pointer text-left text-sm text-gray-700 font-medium flex justify-between items-center group"
         >
           {item}
           <Check className="w-4 h-4 text-green-600 opacity-0 group-hover:opacity-100" />
@@ -55,12 +58,9 @@ export default function Hero() {
   const [isLocating, setIsLocating] = useState(false);
   const navigate = useNavigate();
 
-  // States
   const [province, setProvince] = useState("");
   const [city, setCity] = useState("");
   const [area, setArea] = useState("");
-  
-  // UI Focus States for suggestions
   const [activeField, setActiveField] = useState(null);
 
   const handleCurrentLocation = () => {
@@ -107,7 +107,6 @@ export default function Hero() {
     navigate(`/search?${params.toString()}`);
   };
 
-  // Filter Logic
   const provinceSuggestions = Object.keys(LOCATION_DATA).filter(p => 
     p.toLowerCase().includes(province.toLowerCase()) && province !== p
   );
@@ -121,7 +120,7 @@ export default function Hero() {
     : [];
 
   return (
-    <div className="relative bg-green-900 py-20 overflow-hidden">
+    <div className="relative bg-green-900 py-20">
       <div 
         className="absolute inset-0 opacity-10"
         style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }}
@@ -140,10 +139,9 @@ export default function Hero() {
 
         <form 
           onSubmit={handleSearch} 
-          className="max-w-6xl mx-auto bg-white rounded-2xl p-3 flex flex-col gap-3 shadow-2xl"
+          className="max-w-6xl mx-auto bg-white rounded-2xl p-3 flex flex-col gap-3 shadow-2xl relative z-50"
         >
           <div className="flex flex-col md:flex-row gap-2 w-full">
-            {/* Search Input */}
             <div className="flex-[1.5] flex items-center px-4 border border-gray-100 rounded-xl bg-gray-50">
               <Search className="text-gray-400 w-5 h-5 mr-3" />
               <input 
@@ -162,60 +160,55 @@ export default function Hero() {
               </button>
             </div>
 
-            {/* Smart Suggester Group */}
             <div className="flex flex-col md:flex-row gap-2 flex-[2.5]">
-              
-              {/* Province */}
               <div className="relative flex-1">
                 <input 
                   type="text"
-                  placeholder="Type Province..."
-                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none text-gray-600 font-semibold text-sm"
+                  placeholder="Province"
+                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none text-gray-600 font-semibold text-sm cursor-text"
                   value={province}
                   onFocus={() => setActiveField('province')}
-                  onBlur={() => setTimeout(() => setActiveField(null), 200)}
+                  onBlur={() => setActiveField(null)}
                   onChange={(e) => { setProvince(e.target.value); setCity(""); setArea(""); }}
                 />
                 <SuggestionList 
                   items={provinceSuggestions} 
                   visible={activeField === 'province'} 
-                  onSelect={(val) => { setProvince(val); setActiveField(null); }} 
+                  onSelect={(val) => { setProvince(val); setCity(""); setArea(""); setActiveField(null); }} 
                 />
               </div>
 
-              {/* City - Shows only if province has text */}
               <AnimatePresence>
                 {province && (
-                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative flex-1">
+                  <motion.div initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} className="relative flex-1">
                     <input 
                       type="text"
-                      placeholder="Type City..."
-                      className="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none text-gray-600 font-semibold text-sm"
+                      placeholder="City"
+                      className="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none text-gray-600 font-semibold text-sm cursor-text"
                       value={city}
                       onFocus={() => setActiveField('city')}
-                      onBlur={() => setTimeout(() => setActiveField(null), 200)}
+                      onBlur={() => setActiveField(null)}
                       onChange={(e) => { setCity(e.target.value); setArea(""); }}
                     />
                     <SuggestionList 
                       items={citySuggestions} 
                       visible={activeField === 'city'} 
-                      onSelect={(val) => { setCity(val); setActiveField(null); }} 
+                      onSelect={(val) => { setCity(val); setArea(""); setActiveField(null); }} 
                     />
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* Area - Shows only if city has text */}
               <AnimatePresence>
                 {city && (
-                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative flex-1">
+                  <motion.div initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} className="relative flex-1">
                     <input 
                       type="text"
-                      placeholder="Type Area..."
-                      className="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none text-gray-600 font-semibold text-sm"
+                      placeholder="Area"
+                      className="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none text-gray-600 font-semibold text-sm cursor-text"
                       value={area}
                       onFocus={() => setActiveField('area')}
-                      onBlur={() => setTimeout(() => setActiveField(null), 200)}
+                      onBlur={() => setActiveField(null)}
                       onChange={(e) => setArea(e.target.value)}
                     />
                     <SuggestionList 
