@@ -85,7 +85,7 @@ export default function Navbar() {
           <div className="absolute inset-0 flex justify-center items-center lg:static lg:inset-auto lg:justify-start pointer-events-none">
             <Link to="/" className="flex items-center space-x-3 pointer-events-auto">
               <img
-                src="https://i.postimg.cc/250vR7KM/logo.png"
+                src="https://i.postimg.cc/Cx3wyT7Y/Gemini_Generated_Image_cbcknocbcknocbck_removebg_preview.png"
                 alt="Logo"
                 className="h-12 w-auto object-contain"
               />
