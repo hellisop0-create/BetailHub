@@ -99,8 +99,8 @@ export default function Hero() {
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 text-center">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
-          <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-4 tracking-tight">Pakistan Livestock Mandi</h1>
-          <p className="text-green-100 text-lg opacity-90">پاکستان لائیوسٹاک منڈی - ڈیجیٹل مویشی منڈی</p>
+          <h1 className="text-4xl md:text-7xl font-black text-white mb-4 tracking-tighter font-brand">BetailHub</h1>
+          <p className="text-green-100 text-lg opacity-90">بیٹیل ہب - ڈیجیٹل مویشی منڈی</p>
         </motion.div>
 
         <form onSubmit={handleSearch} className="max-w-6xl mx-auto bg-white rounded-2xl p-3 flex flex-col gap-3 shadow-2xl relative z-50">

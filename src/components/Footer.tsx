@@ -18,7 +18,7 @@ export default function Footer() {
                 alt="Logo"
                 className="h-10 w-auto object-contain"
               />
-              <span className="text-xl font-bold">{t('appName')}</span>
+              <span className="text-2xl font-black tracking-tight font-brand">{t('appName')}</span>
             </div>
             <p className="text-green-100 text-sm leading-relaxed">
               {t('tagline')}
@@ -75,14 +75,14 @@ export default function Footer() {
               </li>
               <li className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 flex-shrink-0" />
-                <span>PakistanLivestockMandi@gmail.com</span>
+                <span>support@betailhub.com</span>
               </li>
             </ul>
           </div>
         </div>
 
         <div className="pt-8 border-t border-white/10 text-center text-green-200 text-xs">
-          <p>&copy; {new Date().getFullYear()} Pakistan Livestock Mandi. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} BetailHub. All rights reserved.</p>
           <p className="mt-2">Designed by DSACSON for high-conversion livestock trading in Pakistan.</p>
         </div>
       </div>

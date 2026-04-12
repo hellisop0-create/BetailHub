@@ -1,8 +1,8 @@
 {
-  "name": "Pakistan Livestock Mandi",
-  "short_name": "Mandi App",
+  "name": "BetailHub",
+  "short_name": "BetailHub",
   "description": "Pakistan's most trusted digital livestock marketplace. Buy and sell cows, buffaloes, goats, and sheep directly from your phone.",
-  "id": "com.pakistan.mandi",
+  "id": "com.betailhub.app",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

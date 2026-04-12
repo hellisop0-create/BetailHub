@@ -2,7 +2,7 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "A user of the Livestock Mandi platform.",
+      "description": "A user of the BetailHub platform.",
       "type": "object",
       "properties": {
         "uid": { "type": "string", "description": "The unique identifier for the user." },

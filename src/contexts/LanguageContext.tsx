@@ -2,8 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Language, Translations } from '../types';
 
 const translations: Translations = {
-  appName: { en: 'Pakistan Livestock Mandi', ur: 'پاکستان مویشی منڈی' },
-  hero: { en: 'Pakistan Livestock Mandi', ur: 'پاکستان میں سب کچھ تلاش کریں۔'},
+  appName: { en: 'BetailHub', ur: 'بیٹیل ہب' },
+  hero: { en: 'BetailHub', ur: 'بیٹیل ہب - پاکستان میں سب کچھ تلاش کریں۔'},
   tagline: { en: 'Buy & Sell Livestock Easily', ur: 'مویشی خریدیں اور فروخت کریں آسانی سے' },
   search: { en: 'Search livestock...', ur: 'مویشی تلاش کریں...' },
   postAd: { en: 'Post Ad', ur: 'اشتہار لگائیں' },

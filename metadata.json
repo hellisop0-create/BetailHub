@@ -1,5 +1,5 @@
 {
-  "name": "Livestock Mandi",
+  "name": "BetailHub",
   "description": "Pakistan's premium livestock marketplace for buying and selling cows, buffaloes, goats, and more.",
   "requestFramePermissions": ["camera", "microphone", "geolocation"]
 }

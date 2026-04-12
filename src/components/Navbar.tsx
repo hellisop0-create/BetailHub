@@ -90,8 +90,8 @@ export default function Navbar() {
                 className="h-12 w-auto object-contain"
               />
               <span className={cn(
-                "text-xl font-bold text-green-900 hidden sm:block",
-                language === 'ur' && "font-urdu"
+                "text-2xl font-black tracking-tight font-brand bg-gradient-to-r from-green-700 to-green-900 bg-clip-text text-transparent hidden sm:block",
+                language === 'ur' && "font-urdu text-green-900"
               )}>
                 {t('appName')}
               </span>
