@@ -14,7 +14,7 @@ export default function Footer() {
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <img
-                src="https://i.postimg.cc/Cx3wyT7Y/Gemini_Generated_Image_cbcknocbcknocbck_removebg_preview.png"
+                src="https://i.postimg.cc/bw8bsGCB/logo.png"
                 alt="Logo"
                 className="h-10 w-auto object-contain"
               />
