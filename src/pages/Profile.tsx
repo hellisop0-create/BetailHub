@@ -1,28 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  collection, 
-  query, 
-  where, 
-  onSnapshot, 
-  deleteDoc, 
-  doc, 
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  deleteDoc,
+  doc,
   documentId,
-  updateDoc 
+  updateDoc
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Ad } from '../types';
 import AdCard from '../components/AdCard';
 import { useLanguage } from '../contexts/LanguageContext';
-import { 
-  Heart, 
-  List, 
-  Trash2, 
-  CheckCircle, 
-  LogOut, 
-  Loader2, 
-  Clock, 
-  Edit3, 
+import {
+  Heart,
+  List,
+  Trash2,
+  CheckCircle,
+  LogOut,
+  Loader2,
+  Clock,
+  Edit3,
   Eye,
   Settings,
   Tag,
@@ -36,7 +36,7 @@ export default function Profile() {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
-  
+
   const [activeTab, setActiveTab] = useState<'listings' | 'favorites'>('listings');
   const [myAds, setMyAds] = useState<Ad[]>([]);
   const [favoriteAds, setFavoriteAds] = useState<Ad[]>([]);
@@ -54,9 +54,9 @@ export default function Profile() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const ads = snapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
+      const ads = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
       } as Ad));
       setMyAds(ads);
       setLoading(false);
@@ -115,7 +115,7 @@ export default function Profile() {
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          
+
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 text-center">
@@ -133,9 +133,9 @@ export default function Profile() {
               </div>
               <h2 className="text-xl font-bold text-gray-900">{user.displayName || 'User'}</h2>
               <p className="text-sm text-gray-500 mb-8">{user.email}</p>
-              
-              <button 
-                onClick={logout} 
+
+              <button
+                onClick={logout}
                 className="w-full bg-red-50 text-red-600 py-3 rounded-2xl font-bold hover:bg-red-100 flex items-center justify-center space-x-2 transition-all active:scale-95"
               >
                 <LogOut className="w-4 h-4" />
@@ -179,14 +179,14 @@ export default function Profile() {
                   ) : myAds.length > 0 ? (
                     myAds.map(ad => (
                       <div key={ad.id} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col space-y-5 transition-all hover:shadow-md">
-                        
+
                         {/* Header: Image and Info */}
                         <div className="flex space-x-4">
                           <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl overflow-hidden flex-shrink-0 bg-gray-50 border border-gray-100 relative">
-                            <img 
-                              src={ad.images?.[0] || 'https://via.placeholder.com/300'} 
-                              alt="" 
-                              className={cn("w-full h-full object-cover", ad.status === 'sold' && "opacity-50 grayscale")} 
+                            <img
+                              src={ad.images?.[0] || 'https://via.placeholder.com/300'}
+                              alt=""
+                              className={cn("w-full h-full object-cover", ad.status === 'sold' && "opacity-50 grayscale")}
                             />
                             {ad.status === 'sold' && (
                               <div className="absolute inset-0 flex items-center justify-center">
@@ -221,7 +221,7 @@ export default function Profile() {
                             <Settings className="w-3 h-3 mr-1" /> Manage Your Ad
                           </p>
                           <div className="grid grid-cols-2 gap-2">
-                            <button 
+                            <button
                               onClick={() => navigate(`/ad/${ad.id}`)}
                               className="flex items-center justify-center space-x-1 py-2.5 px-2 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors text-sm font-bold border border-gray-200"
                             >
@@ -229,7 +229,7 @@ export default function Profile() {
                               <span>View</span>
                             </button>
 
-                            <button 
+                            <button
                               onClick={() => navigate(`/edit-ad/${ad.id}`)}
                               className="flex items-center justify-center space-x-1 py-2.5 px-2 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 transition-colors text-sm font-bold border border-blue-100"
                             >
@@ -237,20 +237,20 @@ export default function Profile() {
                               <span>Edit</span>
                             </button>
 
-                            <button 
-                              onClick={() => navigate(`/services?adId=${ad.id}`)}
+                            <button
+                              onClick={() => navigate(`/billing?adId=${ad.id}`)} // New direct link
                               className="flex items-center justify-center space-x-1 py-2.5 px-2 bg-amber-50 text-amber-700 rounded-xl hover:bg-amber-100 transition-colors text-sm font-bold border border-amber-100"
                             >
                               <Zap className="w-4 h-4 fill-amber-500 text-amber-500" />
                               <span>Promote</span>
                             </button>
 
-                            <button 
+                            <button
                               onClick={() => handleToggleSold(ad.id, ad.status)}
                               className={cn(
                                 "flex items-center justify-center space-x-1 py-2.5 px-2 rounded-xl transition-colors text-sm font-bold border",
-                                ad.status === 'sold' 
-                                  ? "bg-green-600 text-white border-green-700 hover:bg-green-700" 
+                                ad.status === 'sold'
+                                  ? "bg-green-600 text-white border-green-700 hover:bg-green-700"
                                   : "bg-white text-green-700 border-green-200 hover:bg-green-50"
                               )}
                             >
@@ -258,8 +258,8 @@ export default function Profile() {
                               <span>{ad.status === 'sold' ? 'Mark Active' : 'Mark Sold'}</span>
                             </button>
 
-                            <button 
-                              onClick={() => handleDeleteAd(ad.id)} 
+                            <button
+                              onClick={() => handleDeleteAd(ad.id)}
                               className="flex items-center justify-center space-x-1 py-2.5 px-2 bg-red-50 text-red-700 rounded-xl hover:bg-red-100 transition-colors text-sm font-bold border border-red-100"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -282,7 +282,7 @@ export default function Profile() {
                   {loadingFavs ? (
                     <div className="col-span-full flex justify-center py-20"><Loader2 className="w-10 h-10 text-green-700 animate-spin" /></div>
                   ) : favoriteAds.length > 0 ? (
-                    favoriteAds.map(ad => <AdCard key={ad.id} ad={ad} isFavorite={true} onToggleFavorite={() => {}} />)
+                    favoriteAds.map(ad => <AdCard key={ad.id} ad={ad} isFavorite={true} onToggleFavorite={() => { }} />)
                   ) : (
                     <div className="col-span-full bg-white rounded-3xl p-16 text-center border-2 border-dashed border-gray-200">
                       <p className="text-gray-400 font-medium">Your favorites list is empty.</p>
