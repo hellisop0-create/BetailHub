@@ -25,6 +25,7 @@ import {
   Edit3,
   Eye,
   Zap,
+  Star,
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom'; // Added useLocation here
 import { cn } from '../lib/utils';
