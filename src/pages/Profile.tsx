@@ -54,7 +54,7 @@ export default function Profile() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('action') === 'promote') {
-      setActiveTab('listings'); 
+      setActiveTab('listings');
       setShowHint(true);
       // Auto-hide hint after 6 seconds so user has time to see it
       const timer = setTimeout(() => setShowHint(false), 6000);
@@ -207,7 +207,18 @@ export default function Profile() {
                     <div className="col-span-full flex justify-center py-20"><Loader2 className="w-10 h-10 text-green-700 animate-spin" /></div>
                   ) : myAds.length > 0 ? (
                     myAds.map(ad => (
-                      <div key={ad.id} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col space-y-5 transition-all hover:shadow-md">
+                      <div key={ad.id} className={cn(
+                        "bg-white rounded-3xl p-5 shadow-sm border flex flex-col space-y-5 transition-all hover:shadow-md relative",
+                        ad.isFeatured ? "border-amber-200" : "border-gray-100" // Highlight card if featured
+                      )}>
+
+                        {/* GOLDEN FEATURED TAG */}
+                        {ad.isFeatured && (
+                          <div className="absolute -top-3 -right-2 bg-gradient-to-r from-amber-400 to-yellow-600 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg flex items-center gap-1 z-20 border-2 border-white uppercase tracking-tighter">
+                            <Star className="w-3 h-3 fill-white" /> Featured
+                          </div>
+                        )}
+
                         <div className="flex space-x-4">
                           <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl overflow-hidden flex-shrink-0 bg-gray-50 border border-gray-100 relative">
                             <img
@@ -240,27 +251,34 @@ export default function Profile() {
                           <div className="grid grid-cols-2 gap-2">
                             <button onClick={() => navigate(`/ad/${ad.id}`)} className="flex items-center justify-center space-x-1 py-2.5 px-2 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors text-sm font-bold border border-gray-200"><Eye className="w-4 h-4" /><span>View</span></button>
                             <button onClick={() => navigate(`/edit-ad/${ad.id}`)} className="flex items-center justify-center space-x-1 py-2.5 px-2 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 transition-colors text-sm font-bold border border-blue-100"><Edit3 className="w-4 h-4" /><span>Edit</span></button>
-                            
-                            {/* PROMOTE BUTTON WITH POPUP HINT */}
+
+                            {/* PROMOTE BUTTON LOGIC */}
                             <div className="relative">
-                                <button 
-                                    onClick={() => { 
-                                        const s = encodeURIComponent("Featured Ad (Weekly)"); 
-                                        const p = encodeURIComponent("1,000 PKR"); 
-                                        navigate(`/billing?adId=${ad.id}&service=${s}&price=${p}`); 
-                                    }} 
-                                    className="flex items-center justify-center space-x-1 py-2.5 px-2 bg-amber-50 text-amber-700 rounded-xl hover:bg-amber-100 transition-colors text-sm font-bold border border-amber-100 w-full"
-                                >
-                                    <Zap className="w-4 h-4 fill-amber-500 text-amber-500" />
-                                    <span>Promote</span>
-                                </button>
-                                
-                                {showHint && (
-                                    <div className="absolute -top-14 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[11px] px-3 py-2 rounded-xl shadow-xl font-bold whitespace-nowrap animate-bounce z-10 border-2 border-white">
-                                        Click here to Feature!
-                                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-blue-600 rotate-45"></div>
-                                    </div>
+                              <button
+                                disabled={ad.isFeatured} // Makes the button unclickable
+                                onClick={() => {
+                                  const s = encodeURIComponent("Featured Ad (Weekly)");
+                                  const p = encodeURIComponent("1,000 PKR");
+                                  navigate(`/billing?adId=${ad.id}&service=${s}&price=${p}`);
+                                }}
+                                className={cn(
+                                  "flex items-center justify-center space-x-1 py-2.5 px-2 rounded-xl text-sm font-bold border w-full transition-all",
+                                  ad.isFeatured
+                                    ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed" // Disabled look
+                                    : "bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100" // Active look
                                 )}
+                              >
+                                <Zap className={cn("w-4 h-4", ad.isFeatured ? "text-gray-300" : "fill-amber-500 text-amber-500")} />
+                                <span>{ad.isFeatured ? 'Featured' : 'Promote'}</span>
+                              </button>
+
+                              {/* Show hint ONLY if NOT already featured */}
+                              {showHint && !ad.isFeatured && (
+                                <div className="absolute -top-14 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[11px] px-3 py-2 rounded-xl shadow-xl font-bold whitespace-nowrap animate-bounce z-10 border-2 border-white">
+                                  Click here to Feature!
+                                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-blue-600 rotate-45"></div>
+                                </div>
+                              )}
                             </div>
 
                             <button onClick={() => handleToggleSold(ad.id, ad.status)} className={cn("flex items-center justify-center space-x-1 py-2.5 px-2 rounded-xl transition-colors text-sm font-bold border", ad.status === 'sold' ? "bg-green-600 text-white border-green-700 hover:bg-green-700" : "bg-white text-green-700 border-green-200 hover:bg-green-50")}><CheckCircle className="w-4 h-4" /><span>{ad.status === 'sold' ? 'Mark Active' : 'Mark Sold'}</span></button>
@@ -296,8 +314,8 @@ export default function Profile() {
                           </div>
                         </div>
                         <div className="pt-4 border-t border-gray-50 flex space-x-2">
-                            <button onClick={() => navigate(`/ad/${ad.id}`)} className="flex-1 flex items-center justify-center space-x-1 py-2.5 bg-gray-50 text-gray-700 rounded-xl font-bold border border-gray-200"><Eye className="w-4 h-4" /><span>View</span></button>
-                            <button onClick={() => navigate(`/edit-ad/${ad.id}`)} className="flex-1 flex items-center justify-center space-x-1 py-2.5 bg-blue-50 text-blue-700 rounded-xl font-bold border border-blue-100"><Edit3 className="w-4 h-4" /><span>Edit</span></button>
+                          <button onClick={() => navigate(`/ad/${ad.id}`)} className="flex-1 flex items-center justify-center space-x-1 py-2.5 bg-gray-50 text-gray-700 rounded-xl font-bold border border-gray-200"><Eye className="w-4 h-4" /><span>View</span></button>
+                          <button onClick={() => navigate(`/edit-ad/${ad.id}`)} className="flex-1 flex items-center justify-center space-x-1 py-2.5 bg-blue-50 text-blue-700 rounded-xl font-bold border border-blue-100"><Edit3 className="w-4 h-4" /><span>Edit</span></button>
                         </div>
                       </div>
                     ))
