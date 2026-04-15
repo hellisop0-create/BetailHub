@@ -70,6 +70,7 @@ export default function Profile() {
         id: doc.id,
         ...doc.data()
       } as Ad));
+      console.log("DEBUG: All my ads from Firestore:", ads);
       setMyAds(ads);
       setLoading(false);
     }, (err) => {
