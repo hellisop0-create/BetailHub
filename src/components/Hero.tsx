@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 const LOCATION_DATA = {
   "Sindh": {
     "Karachi": ["DHA", "Clifton", "Gulshan-e-Iqbal", "Gulistan-e-Johar", "North Nazimabad", "Malir", "Saddar", "Scheme 33"],
-    "Hyderabad": ["Latifabad", "Qasimabad", "Tando Allahyar Road", "Hyder Chowk", "Heerabaad", "Pathan Colony", "Citizen Colony", "Autobahn"],
+    "Hyderabad": ["Latifabad","Jamshoro", "Qasimabad", "Tando Allahyar Road", "Hyder Chowk", "Heerabaad", "Pathan Colony", "Citizen Colony", "Autobahn"],
     "Sukkur": ["Military Road", "Barrage Road", "Rohri"],
     "Larkana": ["VIP Road", "Station Road"],
     "Mirpur Khas": ["Satellite Town", "Digri Road"]
@@ -76,16 +76,16 @@ export default function Hero() {
     return areas.filter(a => a.toLowerCase().includes(area.toLowerCase()));
   };
 
-  // ✅ FIXED: Normalizing values to lowercase for reliable search tracing
   const handleSearch = (e) => {
     if (e) e.preventDefault();
     if (isSearchDisabled) return;
     
+    // ✅ Updated params to ensure tracing works correctly by matching data casing
     const params = new URLSearchParams({
       q: query.trim(),
-      province: province.toLowerCase(),
-      city: city.toLowerCase(),
-      area: area.toLowerCase()
+      province: province.toLowerCase().trim(),
+      city: city.toLowerCase().trim(),
+      area: area.toLowerCase().trim()
     });
     
     navigate(`/search?${params.toString()}`);
