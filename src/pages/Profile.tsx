@@ -44,15 +44,16 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [loadingFavs, setLoadingFavs] = useState(false);
 
-  // --- RESTORED & FIXED FILTER ---
+  // --- REFINED FILTER LOGIC ---
   const featuredAds = myAds.filter(ad => {
-    // Standard boolean check
+    // If you unfeature it (set isFeatured to false), it should only show if 
+    // it's still in the 'pending' payment phase.
     const isBoolFeatured = ad.isFeatured === true;
-    // Payment status check (case-insensitive)
     const status = ad.featuredStatus?.toLowerCase();
-    const hasFeaturedStatus = status === 'pending' || status === 'active' || status === 'declined';
     
-    return isBoolFeatured || hasFeaturedStatus;
+    // Show if it's explicitly featured OR if it's waiting for approval
+    // Once unfeatured, 'active' status alone won't keep it here.
+    return isBoolFeatured || status === 'pending';
   });
 
   // Fetch User's Own Listings
@@ -257,14 +258,11 @@ export default function Profile() {
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2 mb-1">
                               <h4 className="font-bold text-gray-900 truncate text-lg pr-2">{ad.title}</h4>
-                              {ad.featuredStatus === 'pending' && (
+                              {ad.featuredStatus === 'pending' && !ad.isFeatured && (
                                 <span className="bg-amber-50 text-amber-600 text-[10px] px-2 py-1 rounded-lg flex items-center font-bold uppercase border border-amber-100"><Clock className="w-3 h-3 mr-1" /> Pending</span>
                               )}
-                              {(ad.featuredStatus === 'active' || ad.isFeatured) && (
+                              {ad.isFeatured && (
                                 <span className="bg-green-50 text-green-600 text-[10px] px-2 py-1 rounded-lg flex items-center font-bold uppercase border border-green-100"><CheckCircle className="w-3 h-3 mr-1" /> Active</span>
-                              )}
-                              {ad.featuredStatus === 'declined' && (
-                                <span className="bg-red-50 text-red-600 text-[10px] px-2 py-1 rounded-lg flex items-center font-bold uppercase border border-red-100"><XCircle className="w-3 h-3 mr-1" /> Declined</span>
                               )}
                             </div>
                             <p className="text-green-700 font-extrabold text-xl">{ad.price ? `${ad.price.toLocaleString()} PKR` : 'Price on Call'}</p>
