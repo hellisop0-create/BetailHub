@@ -28,6 +28,7 @@ import ServicesPage from './pages/ServicesPage';
 
 // billing
 import BillingPage from './pages/BillingPage';
+import Checkout from './pages/Checkout';
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/browse" element={<Browse />} />
+                <Route path="/checkout" element={<Checkout />} />
                 <Route path="/ad/:id" element={<AdDetail />} />
                 <Route path="/post-ad" element={<PostAd />} />
                 <Route path="/edit-ad/:id" element={<EditAd />} />
