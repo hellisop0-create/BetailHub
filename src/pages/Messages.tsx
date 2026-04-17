@@ -168,7 +168,21 @@ export default function Messages() {
 
     const text = inputText; 
     setInputText('');
-    await sendMessage(activeChat.id, user.uid, text);
+
+    try {
+      // 1. Sends the message to the sub-collection (existing service)
+      await sendMessage(activeChat.id, user.uid, text);
+
+      // 2. NEW: Update the parent chat document so the "Outside" list sees it
+      const chatRef = doc(db, 'chats', activeChat.id);
+      await updateDoc(chatRef, {
+        lastMessage: text,
+        updatedAt: new Date(), // This ensures the chat jumps to the top of the list
+        lastSenderId: user.uid
+      });
+    } catch (error) {
+      console.error("Failed to update chat preview:", error);
+    }
   };
 
   const filteredChats = chats.filter(chat => {
