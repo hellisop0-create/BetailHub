@@ -60,6 +60,7 @@ export default function Browse() {
           localExact.push(ad);
         }
       });
+      console.table(allFetchedAds.map(ad => ({ id: ad.id, title: ad.title })));
 
       const sortFunction = (a: Ad, b: Ad) => {
         if (a.isFeatured && !b.isFeatured) return -1;
@@ -87,7 +88,7 @@ export default function Browse() {
     if (key === 'province') newParams.delete('city');
     setSearchParams(newParams);
   };
-  console.table(allFetchedAds.map(ad => ({ id: ad.id, title: ad.title })));
+
 
   return (
     <div className="min-h-screen bg-gray-50/50">
