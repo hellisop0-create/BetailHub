@@ -170,14 +170,14 @@ export default function Messages() {
     setInputText('');
 
     try {
-      // 1. Sends the message to the sub-collection (existing service)
+      // 1. Sends the message to the sub-collection
       await sendMessage(activeChat.id, user.uid, text);
 
-      // 2. NEW: Update the parent chat document so the "Outside" list sees it
+      // 2. UPDATES THE PREVIEW: Fixes "No messages yet" and moves chat to top
       const chatRef = doc(db, 'chats', activeChat.id);
       await updateDoc(chatRef, {
         lastMessage: text,
-        updatedAt: new Date(), // This ensures the chat jumps to the top of the list
+        updatedAt: new Date(),
         lastSenderId: user.uid
       });
     } catch (error) {
