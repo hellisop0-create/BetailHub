@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 const ADMIN_EMAILS = [
   'saadatali1403@gmail.com',
   'hellisop0@gmail.com',
+  'chopan.com.pk@gmail.com',
   'mehreensaadat2@gmail.com'
 ].map(email => email.toLowerCase().trim());
 
