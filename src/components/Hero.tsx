@@ -1,30 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Check, ChevronDown } from 'lucide-react';
+import { Search, ChevronDown, MapPin, Edit3 } from 'lucide-react';
 import { motion } from 'motion/react';
-// ✅ Importing your array-based locations file
 import { LOCATION_DATA } from './locations'; 
-
-const SuggestionList = ({ items, onSelect, visible }) => {
-  if (!visible || items.length === 0) return null;
-  return (
-    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-[999] max-h-60 overflow-y-auto py-2">
-      {items.map((item) => (
-        <div
-          key={item}
-          onMouseDown={(e) => {
-            e.preventDefault();
-            onSelect(item);
-          }}
-          className="px-4 py-3 hover:bg-green-50 cursor-pointer text-left text-sm text-gray-700 font-medium flex justify-between items-center group transition-colors"
-        >
-          {item}
-          <Check className="w-4 h-4 text-green-600 opacity-0 group-hover:opacity-100" />
-        </div>
-      ))}
-    </div>
-  );
-};
 
 export default function Hero() {
   const [query, setQuery] = useState("");
@@ -32,108 +10,117 @@ export default function Hero() {
 
   const [province, setProvince] = useState("");
   const [city, setCity] = useState("");
-  const [activeField, setActiveField] = useState(null);
+  const [area, setArea] = useState("");
 
-  // Generate unique list of provinces from your array
+  // Get Unique Provinces
   const provinces = [...new Set(LOCATION_DATA.map(item => item.province))].sort();
 
-  const isSearchDisabled = !query.trim() && !province && !city.trim();
+  // Get Cities filtered by Province
+  const cities = LOCATION_DATA
+    .filter(item => item.province === province)
+    .map(item => item.city)
+    .sort();
 
-  // Filter cities based on selected province
-  const getCitySuggestions = () => {
-    if (!province) return [];
-    
-    // Get all cities that belong to the selected province
-    const provinceCities = LOCATION_DATA
-      .filter(item => item.province === province)
-      .map(item => item.city);
-
-    if (!city) return provinceCities;
-    return provinceCities.filter(c => c.toLowerCase().includes(city.toLowerCase()));
-  };
+  // Get Suggested Areas based on selected City
+  const suggestedAreas = LOCATION_DATA
+    .find(item => item.city === city && item.province === province)?.area || [];
 
   const handleSearch = (e) => {
     if (e) e.preventDefault();
-    if (isSearchDisabled) return;
-    
     const params = new URLSearchParams();
     if (query.trim()) params.append('q', query.trim());
     if (province) params.append('province', province);
-    if (city.trim()) params.append('city', city.trim());
+    if (city) params.append('city', city);
+    if (area) params.append('area', area);
     
     navigate(`/search?${params.toString()}`);
   };
 
   return (
-    <div className="relative bg-green-900 py-20 min-h-[500px]">
-      <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-
-      <div className="relative z-10 max-w-7xl mx-auto px-4 text-center">
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
-          <h1 className="text-4xl md:text-7xl font-black text-white mb-4 tracking-tighter font-brand">Chopan</h1>
-          <p className="text-green-100 text-lg opacity-90">پاکستان کا منفرد آن لائن ڈیجیٹل مویشی منڈی</p>
+    <div className="relative bg-green-900 py-16 md:py-24">
+      <div className="relative z-10 max-w-7xl mx-auto px-4">
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
+          <h1 className="text-5xl md:text-7xl font-black text-white mb-4 font-brand">Chopan</h1>
+          <p className="text-green-100 text-lg font-medium">Find livestock in your exact street or village</p>
         </motion.div>
 
-        <form onSubmit={handleSearch} className="max-w-6xl mx-auto bg-white rounded-2xl p-3 flex flex-col gap-3 shadow-2xl relative z-50">
-          <div className="flex flex-col lg:flex-row gap-2 w-full">
+        <form onSubmit={handleSearch} className="max-w-6xl mx-auto bg-white rounded-3xl p-4 shadow-2xl">
+          <div className="flex flex-col gap-4">
             
-            {/* Search Input */}
-            <div className="flex-[1.5] flex items-center px-4 border border-gray-100 rounded-xl bg-gray-50">
+            {/* 1. Main Keyword Search */}
+            <div className="flex items-center px-4 bg-gray-50 rounded-2xl border border-gray-100">
               <Search className="text-gray-400 w-5 h-5 mr-3" />
               <input 
                 type="text" 
-                placeholder="Find animals (e.g. Cow, Goat...)" 
-                className="w-full py-4 bg-transparent outline-none text-gray-700 font-medium"
+                placeholder="Search for Cow, Goat, Camel..." 
+                className="w-full py-5 bg-transparent outline-none text-gray-700 font-bold"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
 
-            <div className="flex flex-col md:flex-row gap-2 flex-[2]">
-              {/* Province Select */}
-              <div className="relative flex-1">
+            {/* 2. Hierarchical Location Selectors */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              
+              {/* Province Selection */}
+              <div className="relative">
                 <select 
-                  className="w-full h-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none text-gray-600 font-semibold text-sm appearance-none cursor-pointer"
+                  className="w-full p-4 bg-gray-100 rounded-xl outline-none appearance-none font-bold text-gray-600 text-sm cursor-pointer border-2 border-transparent focus:border-green-500 transition-all"
                   value={province}
-                  onChange={(e) => { setProvince(e.target.value); setCity(""); }}
+                  onChange={(e) => { setProvince(e.target.value); setCity(""); setArea(""); }}
                 >
-                  <option value="">Select Province</option>
-                  {provinces.map(p => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
+                  <option value="">All Provinces</option>
+                  {provinces.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
 
-              {/* City Suggestion Input */}
-              <div className="relative flex-1">
-                <input 
-                  type="text"
-                  placeholder="City (Type or Select)"
+              {/* City Selection */}
+              <div className="relative">
+                <select 
                   disabled={!province}
-                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl outline-none text-gray-600 font-semibold text-sm disabled:opacity-50"
+                  className="w-full p-4 bg-gray-100 rounded-xl outline-none appearance-none font-bold text-gray-600 text-sm disabled:opacity-50 border-2 border-transparent focus:border-green-500 transition-all"
                   value={city}
-                  onFocus={() => setActiveField('city')}
-                  onBlur={() => setTimeout(() => setActiveField(null), 200)}
-                  onChange={(e) => setCity(e.target.value)}
-                />
-                <SuggestionList 
-                  items={getCitySuggestions()} 
-                  visible={activeField === 'city'} 
-                  onSelect={(val) => { setCity(val); setActiveField(null); }} 
-                />
+                  onChange={(e) => { setCity(e.target.value); setArea(""); }}
+                >
+                  <option value="">Select City</option>
+                  {cities.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
-            </div>
 
-            <button 
-              type="submit" 
-              disabled={isSearchDisabled}
-              className="bg-orange-500 text-white px-8 py-4 rounded-xl font-bold transition-all active:scale-95 hover:bg-orange-600 disabled:opacity-50"
-            >
-              Search
-            </button>
+              {/* Area: Typed OR Selected (Datalist) */}
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                   <Edit3 className="w-4 h-4 text-gray-400" />
+                </div>
+                <input 
+                  list="area-suggestions"
+                  disabled={!city}
+                  placeholder={city ? "Type or select Area" : "Select City first"}
+                  className="w-full p-4 pl-10 bg-gray-100 rounded-xl outline-none font-bold text-gray-600 text-sm disabled:opacity-50 border-2 border-transparent focus:border-green-500 transition-all placeholder:text-gray-400"
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                />
+                <datalist id="area-suggestions">
+                  {suggestedAreas.map(a => <option key={a} value={a} />)}
+                </datalist>
+              </div>
+
+              {/* Submit */}
+              <button 
+                type="submit" 
+                className="bg-green-600 hover:bg-green-700 text-white font-black rounded-xl transition-all active:scale-95 py-4 shadow-lg shadow-green-200"
+              >
+                FIND NOW
+              </button>
+            </div>
           </div>
         </form>
+        
+        <p className="text-green-200/50 text-xs mt-4 text-center font-medium">
+          Tip: You can type your specific neighborhood if it's not in the list.
+        </p>
       </div>
     </div>
   );
