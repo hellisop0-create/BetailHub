@@ -8,7 +8,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Search, MapPin, Package, Filter } from 'lucide-react';
 import { cn } from '../lib/utils';
 // CORRECTED IMPORT
-import { LOCATION_DATA } from ../locations';
+import { LOCATION_DATA } from '../components/locations';
 
 const categories: Category[] = ['Cattle', 'Buffalo', 'Goat', 'Sheep', 'Camel', 'Others'];
 
