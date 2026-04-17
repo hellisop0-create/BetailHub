@@ -7,8 +7,11 @@ export default function PromotionalBanner() {
 
   useEffect(() => {
     // Get the latest active ad
-    const q = query(
-  collection(db, 'active_ads'),
+    // Change 'active_ads' to 'advertisements'
+const q = query(
+  collection(db, 'advertisements'), 
+  where('isActive', '==', true),
+  orderBy('createdAt', 'desc'),
   limit(1)
 );
 
