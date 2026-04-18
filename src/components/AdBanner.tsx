@@ -48,24 +48,28 @@ const AdBanner = ({ location }) => {
   return (
     <button
       onClick={handleAdClick}
-      className="w-full h-full relative rounded-xl overflow-hidden bg-white flex items-center justify-center transition-transform active:scale-[0.98]"
+      /* 1. Remove w-full
+         2. Add max-w-full to prevent it from going off-screen
+         3. mx-auto keeps the whole button centered in your page
+      */
+      className="max-w-full h-full relative rounded-xl overflow-hidden bg-white flex items-center justify-center transition-transform active:scale-[0.98] mx-auto"
     >
-      <picture className="w-full h-full flex items-center justify-center">
+      <picture className="flex items-center justify-center">
         {/* Desktop Image */}
-        <source
-          media="(min-width: 768px)"
-          srcSet={ad.imageUrl}
-          className="w-full h-full object-contain"
+        <source 
+          media="(min-width: 768px)" 
+          srcSet={ad.imageUrl} 
         />
-
+        
         {/* Mobile Image */}
         <img
           src={ad.mobileImageUrl || ad.imageUrl}
           alt={ad.title || "Advertisement"}
-          /* 'max-h-full' ensures it never exceeds 128px (h-32) on mobile.
-             'w-auto' ensures it doesn't stretch sideways and get blurry.
+          /* h-full: Fills the 128px/160px height.
+             w-auto: Lets the width expand naturally so nothing is cropped.
+             max-w-full: Stops it if it hits the edge of the phone screen.
           */
-          className="max-w-full max-h-full w-auto h-auto object-contain mx-auto"
+          className="h-full w-auto max-w-full object-contain block"
         />
       </picture>
 
