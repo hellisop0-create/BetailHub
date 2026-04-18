@@ -41,7 +41,7 @@ export default function Hero() {
       <div className="relative z-10 max-w-7xl mx-auto px-4">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
           <h1 className="text-5xl md:text-7xl font-black text-white mb-4 font-brand">Chopan</h1>
-          <p className="text-green-100 text-lg font-medium">Find livestock in your exact street or village</p>
+          <p className="text-green-100 text-lg font-medium">چوپان - پاکستان کا منفرد ڈیجیٹل (آن لائن) لائیواسٹاک منڈی </p>
         </motion.div>
 
         <form onSubmit={handleSearch} className="max-w-6xl mx-auto bg-white rounded-3xl p-4 shadow-2xl">
